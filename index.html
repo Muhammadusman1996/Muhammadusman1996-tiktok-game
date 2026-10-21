@@ -1,96 +1,30 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#08090d">
-  <title>TikTok Servers | Customer Account</title>
-  <link rel="stylesheet" href="/style.css">
-  <script src="/app.js" defer></script>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TikTok Game • Member Portal</title>
+<link rel="stylesheet" href="/style.css">
 </head>
-<body class="auth-page">
-  <header class="topbar">
-    <a href="/" class="brand"><span class="brand-icon">♪</span><span>TikTok <b>Servers</b></span></a>
-    <nav class="auth-nav" aria-label="Account pages">
-      <button type="button" class="nav-auth active" data-view="login">Login</button>
-      <button type="button" class="nav-auth" data-view="register">Create Account</button>
-    </nav>
-  </header>
-
-  <main class="auth-main">
-    <section class="auth-intro">
-      <span class="eyebrow">YOUR SOCIAL SERVICES HUB</span>
-      <h1>Welcome to <span>TikTok Servers</span></h1>
-      <p>Create your customer account or log in to access your personal dashboard.</p>
-      <div class="feature-pills">
-        <span>♡ Likes</span><span>▶ Views</span><span>♙ Followers</span><span>↗ Shares</span>
-      </div>
-    </section>
-
-    <section class="auth-card">
-      <div class="auth-tabs">
-        <button type="button" class="auth-tab active" data-view="login">Login</button>
-        <button type="button" class="auth-tab" data-view="register">Create Account</button>
-      </div>
-
-      <form id="loginForm" class="auth-form">
-        <div class="form-heading">
-          <span class="eyebrow">CUSTOMER ACCESS</span>
-          <h2>Welcome <span>Back!</span></h2>
-          <p>Enter your account details to continue.</p>
-        </div>
-        <label for="loginIdentity">Username or Email</label>
-        <input id="loginIdentity" name="identity" type="text" autocomplete="username"
-          placeholder="Enter username or email" required>
-        <label for="loginPassword">Password</label>
-        <input id="loginPassword" name="password" type="password" autocomplete="current-password"
-          placeholder="Enter your password" required minlength="8">
-        <button type="submit" class="btn btn-primary submit-btn">Login to Account →</button>
-        <p class="form-message" id="loginMessage" role="status"></p>
-        <p class="switch-text">Don't have an account?
-          <button type="button" class="text-link" data-view="register">Create Account</button>
-        </p>
-      </form>
-
-      <form id="registerForm" class="auth-form" hidden>
-        <div class="form-heading">
-          <span class="eyebrow">JOIN OUR COMMUNITY</span>
-          <h2>Create <span>Account</span></h2>
-          <p>Enter your details to register.</p>
-        </div>
-        <label for="fullName">Full Name</label>
-        <input id="fullName" name="name" type="text" autocomplete="name"
-          placeholder="Enter your full name" required minlength="2" maxlength="80">
-        <label for="registerUsername">Choose Username</label>
-        <input id="registerUsername" name="username" type="text" autocomplete="username"
-          placeholder="Create a unique username" required minlength="3" maxlength="30"
-          pattern="[A-Za-z0-9_]+" title="Use English letters, numbers and underscores only">
-        <label for="registerEmail">Email Address</label>
-        <input id="registerEmail" name="email" type="email" autocomplete="email"
-          placeholder="Enter your email address" required maxlength="254">
-        <label for="registerPassword">Create Password</label>
-        <input id="registerPassword" name="password" type="password" autocomplete="new-password"
-          placeholder="At least 8 characters" required minlength="8" maxlength="128">
-        <label for="confirmPassword">Confirm Password</label>
-        <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password"
-          placeholder="Enter password again" required minlength="8" maxlength="128">
-        <label class="terms-row">
-          <input type="checkbox" id="acceptTerms" required>
-          <span>I agree to the site's terms and conditions.</span>
-        </label>
-        <button type="submit" class="btn btn-primary submit-btn">Create My Account →</button>
-        <p class="form-message" id="registerMessage" role="status"></p>
-        <p class="switch-text">Already registered?
-          <button type="button" class="text-link" data-view="login">Login Here</button>
-        </p>
-      </form>
-    </section>
-  </main>
-
-  <footer class="footer">
-    <a href="/" class="brand"><span class="brand-icon">♪</span><span>TikTok <b>Servers</b></span></a>
-    <p>Customer Account Portal</p>
-    <p class="footer-small">Independent service concept. Not affiliated with or endorsed by TikTok.</p>
-  </footer>
-</body>
-</html>
+<body>
+<main class="shell">
+  <header class="top"><div class="logo">TT</div><div><h1>TikTok Game</h1><p>Member Portal</p></div><a class="admin-link" href="/admin">Admin</a></header>
+  <section class="panel">
+    <div class="tabs"><button class="tab active" data-view="login">Customer Login</button><button class="tab" data-view="register">Create Account</button></div>
+    <form id="loginForm" class="form">
+      <h2>Welcome back</h2><label>Username<input name="username" required autocomplete="username"></label>
+      <label>Password<input name="password" type="password" required autocomplete="current-password"></label>
+      <button class="primary" type="submit">Login</button>
+    </form>
+    <form id="registerForm" class="form hidden">
+      <h2>Create customer account</h2><label>Full name<input name="name" required minlength="2" maxlength="60"></label>
+      <label>Username<input name="username" required minlength="3" maxlength="30" pattern="[A-Za-z0-9_.-]+" autocomplete="username"></label>
+      <label>Password (at least 8 characters)<input name="password" type="password" required minlength="8" autocomplete="new-password"></label>
+      <button class="primary" type="submit">Create Account</button>
+    </form>
+    <div id="message" class="message" role="status"></div>
+    <section id="memberArea" class="member hidden"><h2>Member Dashboard</h2><p id="memberName"></p><p>Status: <b id="memberStatus"></b></p><p>Credits: <b id="memberCredits"></b></p><button id="logoutBtn" class="secondary">Logout</button></section>
+  </section>
+  <footer>Secure member access • New accounts require admin approval.</footer>
+</main>
+<script src="/app.js"></script>
+</body></html>

@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Admin • TikTok Game</title><link rel="stylesheet" href="/style.css"></head>
+<body><main class="shell"><header class="top"><div class="logo">TT</div><div><h1>Admin Panel</h1><p>Customer management</p></div><a class="admin-link" href="/">Customer page</a></header>
+<section class="panel">
+<form id="adminLogin" class="form"><h2>Admin Login</h2><label>Admin username<input name="username" required autocomplete="username"></label><label>Password<input name="password" type="password" required autocomplete="current-password"></label><button class="primary">Login</button></form>
+<div id="adminArea" class="hidden"><div id="summary" class="stats"></div><div class="table-wrap"><table><thead><tr><th>ID</th><th>Name</th><th>Username</th><th>Status</th><th>Credits</th><th>Actions</th></tr></thead><tbody id="customers"></tbody></table></div><button id="adminLogout" class="secondary">Logout</button></div>
+<div id="adminMessage" class="message" role="status"></div></section></main><script src="/admin.js"></script></body></html>
