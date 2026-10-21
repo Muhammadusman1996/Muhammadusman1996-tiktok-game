@@ -9,18 +9,73 @@
 <main class="shell">
   <header class="top"><div class="logo">TT</div><div><h1>TikTok Game</h1><p>Member Portal</p></div><a class="admin-link" href="/admin">Admin</a></header>
   <section class="panel">
-    <div class="tabs"><button class="tab active" data-view="login">Customer Login</button><button class="tab" data-view="register">Create Account</button></div>
-    <form id="loginForm" class="form">
-      <h2>Welcome back</h2><label>Username<input name="username" required autocomplete="username"></label>
-      <label>Password<input name="password" type="password" required autocomplete="current-password"></label>
-      <button class="primary" type="submit">Login</button>
-    </form>
-    <form id="registerForm" class="form hidden">
-      <h2>Create customer account</h2><label>Full name<input name="name" required minlength="2" maxlength="60"></label>
-      <label>Username<input name="username" required minlength="3" maxlength="30" pattern="[A-Za-z0-9_.-]+" autocomplete="username"></label>
-      <label>Password (at least 8 characters)<input name="password" type="password" required minlength="8" autocomplete="new-password"></label>
-      <button class="primary" type="submit">Create Account</button>
-    </form>
+<div class="tabs">
+  <button type="button" class="tab active"
+    data-view="login" onclick="showAuth('login')">
+    Customer Login
+  </button>
+
+  <button type="button" class="tab"
+    data-view="register" onclick="showAuth('register')">
+    New Account
+  </button>
+</div>
+
+<form id="loginForm" class="form">
+  <h2>Welcome Back</h2>
+
+  <label>Username
+    <input name="username" required autocomplete="username">
+  </label>
+
+  <label>Password
+    <input name="password" type="password" required
+      autocomplete="current-password">
+  </label>
+
+  <button class="primary" type="submit">Login</button>
+</form>
+
+<form id="registerForm" class="form hidden">
+  <h2>Create Customer Account</h2>
+
+  <label>Full Name
+    <input name="name" required minlength="2">
+  </label>
+
+  <label>Username
+    <input name="username" required minlength="3" maxlength="30">
+  </label>
+
+  <label>Password (at least 8 characters)
+    <input name="password" type="password"
+      required minlength="8" autocomplete="new-password">
+  </label>
+
+  <button class="primary" type="submit">Create Account</button>
+</form>
+
+<script>
+function showAuth(mode) {
+  const login = mode === "login";
+
+  document.getElementById("loginForm").classList.toggle(
+    "hidden", !login
+  );
+
+  document.getElementById("registerForm").classList.toggle(
+    "hidden", login
+  );
+
+  document.querySelector('[data-view="login"]').classList.toggle(
+    "active", login
+  );
+
+  document.querySelector('[data-view="register"]').classList.toggle(
+    "active", !login
+  );
+}
+</script>
     <div id="message" class="message" role="status"></div>
     <section id="memberArea" class="member hidden"><h2>Member Dashboard</h2><p id="memberName"></p><p>Status: <b id="memberStatus"></b></p><p>Credits: <b id="memberCredits"></b></p><button id="logoutBtn" class="secondary">Logout</button></section>
   </section>
