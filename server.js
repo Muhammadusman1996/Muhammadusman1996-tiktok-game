@@ -66,8 +66,8 @@ function cleanString(value, max = 60) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 
-app.get("/", (_req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
-app.get("/admin", (_req, res) => res.sendFile(path.join(__dirname, "public", "admin.html")));
+app.get("/", (_req, res) => res.sendFile(path.join(__dirname, "index.html")));
+app.get("/admin", (_req, res) => res.sendFile(path.join(__dirname, "admin.html")));
 
 app.post("/api/register", authLimiter, async (req, res) => {
   const name = cleanString(req.body.name, 60);
