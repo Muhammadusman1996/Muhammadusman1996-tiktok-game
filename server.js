@@ -13,7 +13,7 @@ app.disable("x-powered-by");
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: "30kb" }));
 app.use(express.urlencoded({ extended: false, limit: "30kb" }));
-
+app.set("trust proxy", 1);
 // Serve files from the repository root.
 // index.html, style.css, admin.html, admin.js and app.js are here.
 app.use(express.static(__dirname, { index: false }));
