@@ -38,6 +38,16 @@ function readDb() {
     if (!Number.isInteger(db.nextId)) {
       db.nextId = db.customers.reduce((max, c) => Math.max(max, Number(c.id) || 0), 0) + 1;
     }
+    if (!Array.isArray(db.payments)) {
+  db.payments = [];
+}
+
+if (!Number.isInteger(db.nextPaymentId)) {
+  db.nextPaymentId = db.payments.reduce(
+    (max, p) => Math.max(max, Number(p.id) || 0),
+    0
+  ) + 1;
+}
     return db;
   } catch (error) {
     console.error("Database read error:", error.message);
@@ -56,10 +66,10 @@ function safeCustomer(c) {
     username: c.username,
     status: c.status,
     credits: c.credits,
+    balancePkr: Number(c.balancePkr || 0),
     createdAt: c.createdAt
   };
 }
-
 if (!process.env.SESSION_SECRET) {
   console.error("ERROR: Set SESSION_SECRET in Render Environment.");
 }
@@ -156,6 +166,7 @@ app.post("/api/register", authLimiter, async (req, res) => {
       passwordHash,
       status: "pending",
       credits: 0,
+      balancePkr: 0,
       createdAt: new Date().toISOString()
     };
 
@@ -327,6 +338,165 @@ app.patch("/api/admin/customers/:id/credits", requireAdmin, (req, res) => {
   res.json({ message: "Credits updated." });
 });
 
+const MIN_PAYMENT_PKR = 1000;
+
+// Customer submits payment request
+app.post("/api/payments", requireCustomer, (req, res) => {
+  const amount = Number(req.body.amount);
+  const transactionId = cleanString(req.body.transactionId, 100);
+
+  if (
+    !Number.isFinite(amount) ||
+    amount < MIN_PAYMENT_PKR ||
+    amount > 100000000 ||
+    Math.round(amount * 100) !== amount * 100
+  ) {
+    return res.status(400).json({
+      error: "Minimum payment is Rs. 1,000."
+    });
+  }
+
+  if (transactionId.length < 3) {
+    return res.status(400).json({
+      error: "Enter a valid Transaction ID."
+    });
+  }
+
+  const db = readDb();
+  const customer = db.customers.find(
+    c => String(c.id) === String(req.session.customerId)
+  );
+
+  if (!customer || customer.status !== "approved") {
+    return res.status(403).json({
+      error: "Your account is not approved."
+    });
+  }
+
+  const duplicate = db.payments.some(
+    p => p.transactionId.toLowerCase() === transactionId.toLowerCase()
+  );
+
+  if (duplicate) {
+    return res.status(409).json({
+      error: "This Transaction ID has already been submitted."
+    });
+  }
+
+  const payment = {
+    id: db.nextPaymentId++,
+    customerId: customer.id,
+    amountPkr: amount,
+    transactionId,
+    status: "pending",
+    createdAt: new Date().toISOString(),
+    reviewedAt: null
+  };
+
+  db.payments.push(payment);
+  writeDb(db);
+
+  res.status(201).json({
+    message: "Payment request submitted. Awaiting admin approval.",
+    payment: {
+      id: payment.id,
+      amountPkr: payment.amountPkr,
+      status: payment.status
+    }
+  });
+});
+
+// Customer views payment history
+app.get("/api/payments", requireCustomer, (req, res) => {
+  const db = readDb();
+
+  const payments = db.payments
+    .filter(p => String(p.customerId) === String(req.session.customerId))
+    .map(p => ({
+      id: p.id,
+      amountPkr: p.amountPkr,
+      transactionId: p.transactionId,
+      status: p.status,
+      createdAt: p.createdAt
+    }));
+
+  res.json({ payments });
+});
+
+// Admin views payment requests
+app.get("/api/admin/payments", requireAdmin, (req, res) => {
+  const db = readDb();
+
+  res.json({
+    payments: db.payments.map(p => {
+      const customer = db.customers.find(
+        c => String(c.id) === String(p.customerId)
+      );
+
+      return {
+        ...p,
+        customerName: customer?.name || "Unknown",
+        username: customer?.username || "Unknown"
+      };
+    })
+  });
+});
+
+// Admin approves or rejects a payment
+app.patch("/api/admin/payments/:id", requireAdmin, (req, res) => {
+  const id = Number(req.params.id);
+  const action = cleanString(req.body.status, 20);
+
+  if (
+    !Number.isInteger(id) ||
+    !["approved", "rejected"].includes(action)
+  ) {
+    return res.status(400).json({
+      error: "Invalid payment ID or status."
+    });
+  }
+
+  const db = readDb();
+  const payment = db.payments.find(p => p.id === id);
+
+  if (!payment) {
+    return res.status(404).json({
+      error: "Payment not found."
+    });
+  }
+
+  if (payment.status !== "pending") {
+    return res.status(409).json({
+      error: "This payment has already been reviewed."
+    });
+  }
+
+  if (action === "approved") {
+    const customer = db.customers.find(
+      c => String(c.id) === String(payment.customerId)
+    );
+
+    if (!customer) {
+      return res.status(404).json({
+        error: "Customer not found."
+      });
+    }
+
+    customer.balancePkr = Number(customer.balancePkr || 0)
+      + Number(payment.amountPkr);
+  }
+
+  payment.status = action;
+  payment.reviewedAt = new Date().toISOString();
+
+  writeDb(db);
+
+  res.json({
+    message: action === "approved"
+      ? "Payment approved. Customer balance updated."
+      : "Payment rejected."
+  });
+});
 // Health check
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
