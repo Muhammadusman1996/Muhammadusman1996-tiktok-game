@@ -7,6 +7,8 @@ const fs = require("fs");
 const path = require("path");
 
 const app = express();
+
+app.use(express.static(path.join(__dirname, "public")));
 const PORT = process.env.PORT || 3000;
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
 const DB_FILE = path.join(DATA_DIR, "db.json");
