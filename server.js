@@ -183,17 +183,31 @@ app.post("/api/register", authLimiter, async (req, res) => {
 });
 
 // Customer login
-app.post("/api/login", authLimiter, async (req, res) => {
-  try {
-    const username = cleanString(req.body.username, 30).toLowerCase();
-    const password = typeof req.body.password === "string" ? req.body.password : "";
-    const db = readDb();
-    const customer = db.customers.find(c => c.username === username);
+const username = cleanString(req.body.username, 30).toLowerCase();
+const password = typeof req.body.password === "string"
+  ? req.body.password
+  : "";
 
-    if (!customer || !(await bcrypt.compare(password, customer.passwordHash))) {
-      return res.status(401).json({ error: "Incorrect username or password." });
-    }
+const db = readDB();
 
+const customer = db.customers.find(c =>
+  String(c.username || "").trim().toLowerCase() === username
+);
+
+if (!customer) {
+  return res.status(401).json({
+    error: "Username not found. Please register again."
+  });
+}
+
+if (
+  !customer.passwordHash ||
+  !(await bcrypt.compare(password, customer.passwordHash))
+) {
+  return res.status(401).json({
+    error: "Password does not match. Check your password."
+  });
+}
     if (customer.status !== "approved") {
       return res.status(403).json({
         error: customer.status === "rejected"
