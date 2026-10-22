@@ -438,3 +438,139 @@ app.patch("/api/admin/customers/:id/balance", requireAdmin, (req, res) => {
     customer: safeCustomer(customer)
   });
 });
+// Customer: submit payment request
+app.post("/api/payments", requireCustomer, (req, res) => {
+  const amount = Number(req.body.amount);
+  const method = cleanString(req.body.method, 40);
+  const reference = cleanString(req.body.reference, 100);
+
+  if (!Number.isFinite(amount) || amount < MIN_PAYMENT_PKR) {
+    return res.status(400).json({
+      error: "Minimum payment is Rs. 2000."
+    });
+  }
+
+  if (amount > 10000000) {
+    return res.status(400).json({ error: "Payment amount is too high." });
+  }
+
+  if (!method) {
+    return res.status(400).json({ error: "Payment method is required." });
+  }
+
+  const db = readDb();
+
+  const payment = {
+    id: db.nextPaymentId++,
+    customerId: req.customer.id,
+    username: req.customer.username,
+    amount,
+    method,
+    reference,
+    status: "pending",
+    createdAt: new Date().toISOString(),
+    reviewedAt: null
+  };
+
+  db.payments.push(payment);
+  writeDb(db);
+
+  res.status(201).json({
+    success: true,
+    message: "Payment request submitted for admin review.",
+    payment
+  });
+});
+
+// Customer: view own payment history
+app.get("/api/payments", requireCustomer, (req, res) => {
+  const db = readDb();
+
+  const payments = db.payments.filter(
+    p => p.customerId === req.customer.id
+  );
+
+  res.json({ success: true, payments });
+});
+
+// Admin: view all payment requests
+app.get("/api/admin/payments", requireAdmin, (req, res) => {
+  const db = readDb();
+
+  res.json({
+    success: true,
+    payments: db.payments
+  });
+});
+
+// Admin: approve or reject payment
+app.patch("/api/admin/payments/:id/status", requireAdmin, (req, res) => {
+  const id = Number(req.params.id);
+  const status = cleanString(req.body.status, 20);
+
+  if (
+    !Number.isInteger(id) ||
+    !["approved", "rejected"].includes(status)
+  ) {
+    return res.status(400).json({
+      error: "Invalid payment ID or status."
+    });
+  }
+
+  const db = readDb();
+  const payment = db.payments.find(p => p.id === id);
+
+  if (!payment) {
+    return res.status(404).json({ error: "Payment not found." });
+  }
+
+  if (payment.status !== "pending") {
+    return res.status(409).json({
+      error: "This payment has already been reviewed."
+    });
+  }
+
+  if (status === "approved") {
+    const customer = db.customers.find(
+      c => c.id === payment.customerId
+    );
+
+    if (!customer) {
+      return res.status(404).json({
+        error: "Customer for this payment was not found."
+      });
+    }
+
+    customer.balancePkr = Number(customer.balancePkr || 0)
+      + Number(payment.amount);
+  }
+
+  payment.status = status;
+  payment.reviewedAt = new Date().toISOString();
+
+  writeDb(db);
+
+  res.json({
+    success: true,
+    message: `Payment ${status}.`,
+    payment
+  });
+});
+
+// Health check
+app.get("/health", (req, res) => {
+  res.json({
+    success: true,
+    status: "running"
+  });
+});
+
+// Unknown API route
+app.use("/api", (req, res) => {
+  res.status(404).json({ error: "API route not found." });
+});
+
+// Start server
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Royal Member server running on port ${PORT}`);
+});
