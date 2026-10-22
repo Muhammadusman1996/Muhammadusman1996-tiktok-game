@@ -182,6 +182,7 @@ app.post("/api/register", authLimiter, async (req, res) => {
   }
 });
 
+app.post("/api/login", authLimiter, async (req, res) => {
 // Customer login
 const username = cleanString(req.body.username, 30).toLowerCase();
 const password = typeof req.body.password === "string"
