@@ -1,59 +1,140 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TikTok Game • Member Portal</title>
-<link rel="stylesheet" href="/style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090b12">
+  <title>TikTok Game • Member Portal</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <main class="shell">
-  <header class="top"><div class="logo">TT</div><div><h1>TikTok Game</h1><p>Member Portal</p></div>
+
+  <header class="top">
+    <div class="logo">TT</div>
+    <div class="brand">
+      <h1>TikTok Game</h1>
+      <p>MEMBER PORTAL</p>
+    </div>
+  </header>
+
   <section class="panel">
-<div class="tabs">
-  <button type="button" class="tab active"
-    data-view="login" onclick="showAuth('login')">
-    Customer Login
-  </button>
 
-  <button type="button" class="tab"
-    data-view="register" onclick="showAuth('register')">
-    New Account
-  </button>
-</div>
+    <div class="welcome">
+      <span class="eyebrow">MEMBER ACCESS</span>
+      <h2 id="authTitle">Welcome Back</h2>
+      <p id="authSubtitle">Login to access your member account</p>
+    </div>
 
-<form id="loginForm" class="form">
-  <h2>Welcome Back</h2>
+    <div class="tabs">
+      <button type="button" class="tab active"
+        data-view="login" onclick="showAuth('login')">
+        Login
+      </button>
 
-  <label>Username
-    <input name="username" required autocomplete="username">
-  </label>
+      <button type="button" class="tab"
+        data-view="register" onclick="showAuth('register')">
+        New Account
+      </button>
+    </div>
 
-  <label>Password
-    <input name="password" type="password" required
-      autocomplete="current-password">
-  </label>
+    <form id="loginForm" class="form">
+      <label for="loginUsername">USERNAME</label>
+      <div class="input-wrap">
+        <span class="field-icon" aria-hidden="true">♙</span>
+        <input id="loginUsername" name="username"
+          placeholder="Enter your username"
+          required autocomplete="username">
+      </div>
 
-  <button class="primary" type="submit">Login</button>
-</form>
+      <label for="loginPassword">PASSWORD</label>
+      <div class="input-wrap">
+        <span class="field-icon" aria-hidden="true">♙</span>
+        <input id="loginPassword" name="password"
+          type="password" placeholder="Enter your password"
+          required autocomplete="current-password">
+        <button class="toggle-password" type="button"
+          onclick="togglePassword('loginPassword', this)"
+          aria-label="Show password">Show</button>
+      </div>
 
-<form id="registerForm" class="form hidden">
-  <h2>Create Customer Account</h2>
+      <button class="primary" type="submit">
+        <span>➜</span> Login
+      </button>
 
-  <label>Full Name
-    <input name="name" required minlength="2">
-  </label>
+      <p class="switch-note">
+        Don't have an account?
+        <button type="button" class="text-button"
+          onclick="showAuth('register')">Create Account</button>
+      </p>
+    </form>
 
-  <label>Username
-    <input name="username" required minlength="3" maxlength="30">
-  </label>
+    <form id="registerForm" class="form hidden">
+      <label for="registerName">FULL NAME</label>
+      <div class="input-wrap">
+        <span class="field-icon" aria-hidden="true">♙</span>
+        <input id="registerName" name="name"
+          placeholder="Enter your full name"
+          required minlength="2" autocomplete="name">
+      </div>
 
-  <label>Password (at least 8 characters)
-    <input name="password" type="password"
-      required minlength="8" autocomplete="new-password">
-  </label>
+      <label for="registerUsername">USERNAME</label>
+      <div class="input-wrap">
+        <span class="field-icon" aria-hidden="true">♙</span>
+        <input id="registerUsername" name="username"
+          placeholder="Choose a username"
+          required minlength="3" maxlength="30"
+          autocomplete="username">
+      </div>
 
-  <button class="primary" type="submit">Create Account</button>
-</form>
+      <label for="registerPassword">PASSWORD</label>
+      <div class="input-wrap">
+        <span class="field-icon" aria-hidden="true">♙</span>
+        <input id="registerPassword" name="password"
+          type="password" placeholder="At least 8 characters"
+          required minlength="8" autocomplete="new-password">
+        <button class="toggle-password" type="button"
+          onclick="togglePassword('registerPassword', this)"
+          aria-label="Show password">Show</button>
+      </div>
+
+      <button class="primary" type="submit">
+        <span>✦</span> Create Account
+      </button>
+
+      <p class="switch-note">
+        Already registered?
+        <button type="button" class="text-button"
+          onclick="showAuth('login')">Login</button>
+      </p>
+    </form>
+
+    <div id="message" class="message" role="status"
+      aria-live="polite"></div>
+
+    <section id="memberArea" class="member hidden">
+      <div class="member-icon">✦</div>
+      <h2>Member Dashboard</h2>
+      <p id="memberName"></p>
+      <p>Status: <b id="memberStatus"></b></p>
+      <p>Credits: <b id="memberCredits"></b></p>
+      <button id="logoutBtn" class="secondary" type="button">
+        Logout
+      </button>
+    </section>
+
+    <div class="security-note">
+      <span>🔒</span>
+      <span>Your account is protected.<br>
+      New accounts require admin approval.</span>
+    </div>
+
+  </section>
+
+  <footer>
+    © TikTok Game • Secure Member Portal
+  </footer>
+</main>
 
 <script>
 function showAuth(mode) {
@@ -62,7 +143,6 @@ function showAuth(mode) {
   document.getElementById("loginForm").classList.toggle(
     "hidden", !login
   );
-
   document.getElementById("registerForm").classList.toggle(
     "hidden", login
   );
@@ -70,16 +150,30 @@ function showAuth(mode) {
   document.querySelector('[data-view="login"]').classList.toggle(
     "active", login
   );
-
   document.querySelector('[data-view="register"]').classList.toggle(
     "active", !login
   );
+
+  document.getElementById("authTitle").textContent =
+    login ? "Welcome Back" : "Create Account";
+
+  document.getElementById("authSubtitle").textContent =
+    login ? "Login to access your member account" :
+    "Join us and create your member account";
+}
+
+function togglePassword(id, button) {
+  const input = document.getElementById(id);
+  const show = input.type === "password";
+
+  input.type = show ? "text" : "password";
+  button.textContent = show ? "Hide" : "Show";
+  button.setAttribute(
+    "aria-label", show ? "Hide password" : "Show password"
+  );
 }
 </script>
-    <div id="message" class="message" role="status"></div>
-    <section id="memberArea" class="member hidden"><h2>Member Dashboard</h2><p id="memberName"></p><p>Status: <b id="memberStatus"></b></p><p>Credits: <b id="memberCredits"></b></p><button id="logoutBtn" class="secondary">Logout</button></section>
-  </section>
-  <footer>Secure member access • New accounts require admin approval.</footer>
-</main>
+
 <script src="/app.js"></script>
-</body></html>
+</body>
+</html>
