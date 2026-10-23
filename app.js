@@ -1,48 +1,149 @@
-const $ = (s) => document.querySelector(s);
+const $ = (selector) => document.querySelector(selector);
+
 const message = $("#message");
-function showMessage(text, bad = false) { message.textContent = text; message.className = "message " + (bad ? "error" : "success"); }
+
+function showMessage(text, bad = false) {
+  message.textContent = text;
+  message.className = "message " + (bad ? "error" : "success");
+}
+
 function showView(view) {
   $("#loginForm").classList.toggle("hidden", view !== "login");
   $("#registerForm").classList.toggle("hidden", view !== "register");
-  document.querySelectorAll(".tab").forEach(b => b.classList.toggle("active", b.dataset.view === view));
+
+  document.querySelectorAll(".tab").forEach(button => {
+    button.classList.toggle("active", button.dataset.view === view);
+  });
+
   message.textContent = "";
 }
-document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => showView(b.dataset.view)));
+
+document.querySelectorAll(".tab").forEach(button => {
+  button.addEventListener("click", () => showView(button.dataset.view));
+});
+
 async function api(url, options = {}) {
-  const response = await fetch(url, { ...options, headers: { "Content-Type": "application/json", ...(options.headers || {}) } });
+  const response = await fetch(url, {
+    credentials: "same-origin",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {})
+    }
+  });
+
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || "Request failed.");
+
+  if (!response.ok) {
+    throw new Error(data.error || `Request failed (${response.status})`);
+  }
+
   return data;
 }
-$("#registerForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  const f = new FormData(e.currentTarget);
+
+// Customer registration
+$("#registerForm").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  const button = form.querySelector('button[type="submit"], button:not([type])');
+
+  if (button) button.disabled = true;
+
   try {
-    const result = await api("/api/register", { method: "POST", body: JSON.stringify(Object.fromEntries(f)) });
-    e.currentTarget.reset(); showMessage(result.message);
-  } catch (err) { showMessage(err.message, true); }
+    const values = Object.fromEntries(new FormData(form));
+
+    const result = await api("/api/register", {
+      method: "POST",
+      body: JSON.stringify(values)
+    });
+
+    form.reset();
+    showMessage(
+      result.message || "Account created. Please wait for admin approval."
+    );
+  } catch (error) {
+    showMessage(error.message, true);
+  } finally {
+    if (button) button.disabled = false;
+  }
 });
-$("#loginForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  const f = new FormData(e.currentTarget);
+
+// Customer login
+$("#loginForm").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const form = event.currentTarget;
+  const button = form.querySelector('button[type="submit"], button:not([type])');
+
+  if (button) button.disabled = true;
+
   try {
-    await api("/api/login", { method: "POST", body: JSON.stringify(Object.fromEntries(f)) });
-    e.currentTarget.reset(); await loadMember();
-  } catch (err) { showMessage(err.message, true); }
+    const values = Object.fromEntries(new FormData(form));
+
+    await api("/api/login", {
+      method: "POST",
+      body: JSON.stringify(values)
+    });
+
+    form.reset();
+
+    // Verify that the server session is working.
+    await loadMember(true);
+  } catch (error) {
+    showMessage(error.message, true);
+  } finally {
+    if (button) button.disabled = false;
+  }
 });
-async function loadMember() {
+
+// Load the logged-in customer
+async function loadMember(showError = false) {
   try {
     const data = await api("/api/me");
+
+    if (!data.customer) {
+      throw new Error("Customer information was not returned by the server.");
+    }
+
     $("#memberName").textContent = "Welcome, " + data.customer.name;
     $("#memberStatus").textContent = data.customer.status;
-    $("#memberCredits").textContent = data.customer.credits;
+    $("#memberCredits").textContent = data.customer.credits ?? 0;
+
     $("#memberArea").classList.remove("hidden");
-    $("#loginForm").classList.add("hidden"); $("#registerForm").classList.add("hidden");
-    document.querySelector(".tabs").classList.add("hidden");
+    $("#loginForm").classList.add("hidden");
+    $("#registerForm").classList.add("hidden");
+
+    const tabs = document.querySelector(".tabs");
+    if (tabs) tabs.classList.add("hidden");
+
     showMessage("You are logged in.");
-  } catch {}
+    return true;
+  } catch (error) {
+    if (showError) {
+      showMessage(
+        "Login/session check failed: " + error.message,
+        true
+      );
+    }
+
+    return false;
+  }
 }
+
+// Customer logout
 $("#logoutBtn").addEventListener("click", async () => {
-  try { await api("/api/logout", { method: "POST", body: "{}" }); } finally { location.reload(); }
+  try {
+    await api("/api/logout", {
+      method: "POST",
+      body: JSON.stringify({})
+    });
+
+    location.reload();
+  } catch (error) {
+    showMessage(error.message, true);
+  }
 });
-loadMember();
+
+// Check for an existing login session on page load
+loadMember(false);
