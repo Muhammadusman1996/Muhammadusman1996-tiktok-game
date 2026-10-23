@@ -189,3 +189,133 @@ loadMember(false);
     });
   });
 })();
+
+/* TikTok Followers Order Form - Add-on Only */
+(() => {
+  const toggle = document.querySelector("#tiktokToggle");
+  const list = document.querySelector("#tiktokCountryList");
+  const arrow = document.querySelector("#ttArrow");
+  const selected = document.querySelector("#ttSelected");
+
+  if (!toggle || !list || !arrow || !selected) return;
+
+  toggle.addEventListener("click", () => {
+    const opening = list.classList.contains("hidden");
+    list.classList.toggle("hidden", !opening);
+    toggle.setAttribute("aria-expanded", String(opening));
+    arrow.textContent = opening ? "⌃" : "⌄";
+  });
+
+  document.querySelectorAll(".tt-country").forEach(button => {
+    button.addEventListener("click", () => {
+      const country = button.dataset.country;
+      const flag = button.dataset.flag || "🌐";
+      const isMix = country === "All Mix";
+      const quantity = isMix ? 3000 : 1000;
+      const price = isMix ? 250 : 100;
+
+      selected.replaceChildren();
+      selected.classList.remove("hidden");
+
+      const heading = document.createElement("h3");
+      heading.textContent = `${flag} ${country} TikTok Followers`;
+
+      const details = document.createElement("p");
+      details.textContent =
+        `Quantity: ${quantity.toLocaleString()} Followers | Price: Rs. ${price}`;
+
+      const form = document.createElement("form");
+      form.id = "ttOrderForm";
+
+      const label = document.createElement("label");
+      label.htmlFor = "ttProfileLink";
+      label.textContent = "TikTok Profile Link";
+
+      const input = document.createElement("input");
+      input.id = "ttProfileLink";
+      input.type = "url";
+      input.placeholder = "https://www.tiktok.com/@username";
+      input.required = true;
+
+      const submit = document.createElement("button");
+      submit.type = "submit";
+      submit.className = "primary";
+      submit.textContent = "Submit Request";
+
+      const status = document.createElement("p");
+      status.setAttribute("role", "status");
+
+      form.append(label, input, submit, status);
+      selected.append(heading, details, form);
+
+      form.addEventListener("submit", async event => {
+        event.preventDefault();
+
+        let url;
+        try {
+          url = new URL(input.value.trim());
+        } catch {
+          status.textContent = "Please enter a valid TikTok profile link.";
+          return;
+        }
+
+        if (
+          url.protocol !== "https:" ||
+          !/(^|\.)tiktok\.com$/i.test(url.hostname) ||
+          !/^\/@[\w.-]+\/?$/.test(url.pathname)
+        ) {
+          status.textContent = "Enter a valid TikTok profile URL.";
+          return;
+        }
+
+        submit.disabled = true;
+        submit.textContent = "Submitting...";
+
+        try {
+          const response = await fetch("/api/orders", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              platform: "TikTok",
+              service: "Followers",
+              country,
+              profileLink: url.href,
+              quantity,
+              price
+            })
+          });
+
+          const result = await response.json().catch(() => ({}));
+
+          if (!response.ok) {
+            throw new Error(result.error || "Request failed.");
+          }
+
+          selected.replaceChildren();
+
+          const success = document.createElement("div");
+          success.className = "tt-order-success";
+
+          const icon = document.createElement("div");
+          icon.className = "tt-success-icon";
+          icon.textContent = "✓";
+
+          const title = document.createElement("h3");
+          title.textContent = "Request Submitted Successfully!";
+
+          const text = document.createElement("p");
+          text.textContent =
+            result.message || "Your request has been received.";
+
+          success.append(icon, title, text);
+          selected.append(success);
+        } catch (error) {
+          status.textContent = error.message;
+          submit.disabled = false;
+          submit.textContent = "Submit Request";
+        }
+      });
+    });
+  });
+})();
