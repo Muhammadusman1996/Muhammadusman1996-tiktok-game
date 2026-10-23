@@ -1,7 +1,8 @@
 'use strict';
 
 const $ = (selector, root = document) => root.querySelector(selector);
-const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+const $$ = (selector, root = document) =>
+  Array.from(root.querySelectorAll(selector));
 
 const message = $('#message');
 
@@ -18,16 +19,16 @@ function showView(view) {
   if (loginForm) loginForm.classList.toggle('hidden', view !== 'login');
   if (registerForm) registerForm.classList.toggle('hidden', view !== 'register');
 
-  $$('.tab').forEach(button => {
-    button.classList.toggle('active', button.dataset.view === view);
-  });
+  $$('.tab').forEach(button =>
+    button.classList.toggle('active', button.dataset.view === view)
+  );
 
   if (message) message.textContent = '';
 }
 
-$$('.tab').forEach(button => {
-  button.addEventListener('click', () => showView(button.dataset.view));
-});
+$$('.tab').forEach(button =>
+  button.addEventListener('click', () => showView(button.dataset.view))
+);
 
 async function api(url, options = {}) {
   const response = await fetch(url, {
@@ -52,7 +53,6 @@ async function api(url, options = {}) {
   return data;
 }
 
-// Customer registration
 const registerForm = $('#registerForm');
 
 if (registerForm) {
@@ -66,17 +66,14 @@ if (registerForm) {
 
     try {
       const values = Object.fromEntries(new FormData(form));
-
       const result = await api('/api/register', {
         method: 'POST',
         body: JSON.stringify(values)
       });
 
       form.reset();
-
       showMessage(
-        result.message ||
-        'Account created. Please wait for admin approval.'
+        result.message || 'Account created. Please wait for admin approval.'
       );
     } catch (error) {
       showMessage(error.message, true);
@@ -86,7 +83,6 @@ if (registerForm) {
   });
 }
 
-// Customer login
 const loginForm = $('#loginForm');
 
 if (loginForm) {
@@ -107,7 +103,6 @@ if (loginForm) {
       });
 
       form.reset();
-
       await loadMember(true);
     } catch (error) {
       showMessage(error.message, true);
@@ -117,16 +112,13 @@ if (loginForm) {
   });
 }
 
-// Load the logged-in customer
 async function loadMember(showError = false) {
   try {
     const data = await api('/api/me');
     const customer = data.customer || data.user;
 
     if (!customer) {
-      throw new Error(
-        'Customer information was not returned by the server.'
-      );
+      throw new Error('Customer information was not returned by the server.');
     }
 
     const name = $('#memberName');
@@ -138,17 +130,12 @@ async function loadMember(showError = false) {
         `Welcome, ${customer.name || customer.username || 'Member'}`;
     }
 
-    if (status) {
-      status.textContent = customer.status || 'Approved';
-    }
-
-    if (credits) {
-      credits.textContent = String(customer.credits ?? 0);
-    }
+    if (status) status.textContent = customer.status || 'Approved';
+    if (credits) credits.textContent = String(customer.credits ?? 0);
 
     const memberArea = $('#memberArea');
-
     if (memberArea) memberArea.classList.remove('hidden');
+
     if (loginForm) loginForm.classList.add('hidden');
     if (registerForm) registerForm.classList.add('hidden');
 
@@ -156,21 +143,15 @@ async function loadMember(showError = false) {
     if (tabs) tabs.classList.add('hidden');
 
     showMessage('You are logged in.');
-
     return true;
   } catch (error) {
     if (showError) {
-      showMessage(
-        `Login/session check failed: ${error.message}`,
-        true
-      );
+      showMessage(`Login/session check failed: ${error.message}`, true);
     }
-
     return false;
   }
 }
 
-// Customer logout
 const logoutBtn = $('#logoutBtn');
 
 if (logoutBtn) {
@@ -191,146 +172,178 @@ if (logoutBtn) {
   });
 }
 
-// TikTok country selector and order form
+/* TikTok services and order forms */
 (() => {
-  const toggle = $('#tiktokToggle');
-  const list = $('#tiktokCountryList');
-  const arrow = $('#ttArrow');
+  const serviceList = $('#tiktokServices');
+  if (!serviceList) return;
+
+  const services = {
+    Followers: [
+      { name: 'All Mix', quantity: 3000, price: 250, flag: '🌐' },
+      { name: 'Pakistan', quantity: 1000, price: 100, flag: '🇵🇰' },
+      { name: 'United States', quantity: 1000, price: 100, flag: '🇺🇸' },
+      { name: 'United Kingdom', quantity: 1000, price: 100, flag: '🇬🇧' },
+      { name: 'India', quantity: 1000, price: 100, flag: '🇮🇳' },
+      { name: 'Canada', quantity: 1000, price: 100, flag: '🇨🇦' },
+      { name: 'Australia', quantity: 1000, price: 100, flag: '🇦🇺' }
+    ],
+    Likes: [
+      { name: 'Mix Likes', quantity: 1000, price: 150, flag: '🌐' },
+      { name: 'All in One Likes', quantity: 1000, price: 50, flag: '🌐' }
+    ],
+    Views: [
+      { name: 'Standard', quantity: 2000, price: 10, flag: '▶️' }
+    ],
+    'Add Favourite': [
+      { name: 'Standard', quantity: 1000, price: 500, flag: '⭐' }
+    ],
+    Share: [
+      { name: 'Standard', quantity: 1000, price: 500, flag: '🔗' }
+    ],
+    Comment: [
+      { name: 'Standard', quantity: 1000, price: 500, flag: '💬' }
+    ]
+  };
+
+  let selectedService = 'Followers';
+
+  const picker = $('#tiktokPackageList');
   const selected = $('#ttSelected');
 
-  if (!toggle || !list || !arrow || !selected) return;
+  function renderPackages() {
+    if (!picker) return;
 
-  toggle.setAttribute(
-    'aria-expanded',
-    String(!list.classList.contains('hidden'))
-  );
+    picker.replaceChildren();
 
-  // One toggle handler only
-  toggle.addEventListener('click', () => {
-    const opening = list.classList.contains('hidden');
+    services[selectedService].forEach(item => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'tt-country';
+      button.textContent =
+        `${item.flag} ${item.name} — ${item.quantity.toLocaleString()} — Rs. ${item.price}`;
 
-    list.classList.toggle('hidden', !opening);
-    toggle.setAttribute('aria-expanded', String(opening));
-    arrow.textContent = opening ? '⌃' : '⌄';
-  });
+      button.addEventListener('click', () => renderOrder(item));
+      picker.append(button);
+    });
+  }
 
-  // One country handler per country button
-  $$('.tt-country', list).forEach(button => {
+  function renderOrder(item) {
+    if (!selected) return;
+
+    selected.replaceChildren();
+    selected.classList.remove('hidden');
+
+    const heading = document.createElement('h3');
+    heading.textContent = `${item.flag} TikTok ${selectedService}`;
+
+    const details = document.createElement('p');
+    details.textContent =
+      `${item.name} | Quantity: ${item.quantity.toLocaleString()} | Price: Rs. ${item.price}`;
+
+    const form = document.createElement('form');
+    form.id = 'ttOrderForm';
+
+    const label = document.createElement('label');
+    label.htmlFor = 'ttProfileLink';
+    label.textContent = 'TikTok Profile Link';
+
+    const input = document.createElement('input');
+    input.id = 'ttProfileLink';
+    input.name = 'profileLink';
+    input.type = 'url';
+    input.autocomplete = 'url';
+    input.placeholder = 'https://www.tiktok.com/@username';
+    input.required = true;
+
+    const submit = document.createElement('button');
+    submit.type = 'submit';
+    submit.className = 'primary';
+    submit.textContent = 'Submit Request';
+
+    const status = document.createElement('p');
+    status.setAttribute('role', 'status');
+
+    form.append(label, input, submit, status);
+    selected.append(heading, details, form);
+
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+
+      let url;
+
+      try {
+        url = new URL(input.value.trim());
+      } catch {
+        status.textContent = 'Please enter a valid TikTok profile link.';
+        return;
+      }
+
+      if (
+        url.protocol !== 'https:' ||
+        !/(^|\.)tiktok\.com$/i.test(url.hostname) ||
+        !/^\/@[\w.-]+\/?$/.test(url.pathname)
+      ) {
+        status.textContent =
+          'Enter a valid TikTok profile URL, such as https://www.tiktok.com/@username.';
+        return;
+      }
+
+      submit.disabled = true;
+      submit.textContent = 'Submitting...';
+      status.textContent = '';
+
+      try {
+        const result = await api('/api/orders', {
+          method: 'POST',
+          body: JSON.stringify({
+            platform: 'TikTok',
+            service: selectedService,
+            country: item.name,
+            package: item.name,
+            profileLink: url.href
+          })
+        });
+
+        selected.replaceChildren();
+
+        const success = document.createElement('div');
+        success.className = 'tt-order-success';
+
+        const title = document.createElement('h3');
+        title.textContent = 'Request Submitted Successfully!';
+
+        const text = document.createElement('p');
+        text.textContent =
+          result.message ||
+          `Your request #${result.order?.id || ''} has been received.`;
+
+        success.append(title, text);
+        selected.append(success);
+      } catch (error) {
+        status.textContent = error.message;
+        submit.disabled = false;
+        submit.textContent = 'Submit Request';
+      }
+    });
+  }
+
+  $$('.tt-service-button').forEach(button => {
     button.addEventListener('click', () => {
-      const country = (button.dataset.country || '').trim();
-      const flag = button.dataset.flag || '🌐';
+      selectedService = button.dataset.service;
 
-      if (!country) return;
-
-      const isMix = country.toLowerCase() === 'all mix';
-      const quantity = isMix ? 3000 : 1000;
-      const price = isMix ? 250 : 100;
-
-      selected.replaceChildren();
-      selected.classList.remove('hidden');
-
-      const heading = document.createElement('h3');
-      heading.textContent = `${flag} ${country} TikTok Followers`;
-
-      const details = document.createElement('p');
-      details.textContent =
-        `Quantity: ${quantity.toLocaleString()} Followers | Price: Rs. ${price}`;
-
-      const form = document.createElement('form');
-      form.id = 'ttOrderForm';
-
-      const label = document.createElement('label');
-      label.htmlFor = 'ttProfileLink';
-      label.textContent = 'TikTok Profile Link';
-
-      const input = document.createElement('input');
-      input.id = 'ttProfileLink';
-      input.name = 'profileLink';
-      input.type = 'url';
-      input.autocomplete = 'url';
-      input.placeholder = 'https://www.tiktok.com/@username';
-      input.required = true;
-
-      const submit = document.createElement('button');
-      submit.type = 'submit';
-      submit.className = 'primary';
-      submit.textContent = 'Submit Request';
-
-      const status = document.createElement('p');
-      status.setAttribute('role', 'status');
-
-      form.append(label, input, submit, status);
-      selected.append(heading, details, form);
-
-      form.addEventListener('submit', async event => {
-        event.preventDefault();
-
-        let url;
-
-        try {
-          url = new URL(input.value.trim());
-        } catch {
-          status.textContent =
-            'Please enter a valid TikTok profile link.';
-          return;
-        }
-
-        const validTikTokUrl =
-          url.protocol === 'https:' &&
-          /(^|\.)tiktok\.com$/i.test(url.hostname) &&
-          /^\/@[\w.-]+\/?$/.test(url.pathname);
-
-        if (!validTikTokUrl) {
-          status.textContent =
-            'Enter a valid TikTok profile URL, such as https://www.tiktok.com/@username.';
-          return;
-        }
-
-        submit.disabled = true;
-        submit.textContent = 'Submitting...';
-        status.textContent = '';
-
-        try {
-          const result = await api('/api/orders', {
-            method: 'POST',
-            body: JSON.stringify({
-              platform: 'TikTok',
-              service: 'Followers',
-              country,
-              profileLink: url.href,
-              quantity,
-              price
-            })
-          });
-
-          selected.replaceChildren();
-
-          const success = document.createElement('div');
-          success.className = 'tt-order-success';
-
-          const icon = document.createElement('div');
-          icon.className = 'tt-success-icon';
-          icon.textContent = '✓';
-
-          const title = document.createElement('h3');
-          title.textContent = 'Request Submitted Successfully!';
-
-          const text = document.createElement('p');
-          text.textContent =
-            result.message ||
-            `Your request #${result.order?.id || ''} has been received.`;
-
-          success.append(icon, title, text);
-          selected.append(success);
-        } catch (error) {
-          status.textContent = error.message;
-          submit.disabled = false;
-          submit.textContent = 'Submit Request';
-        }
+      $$('.tt-service-button').forEach(item => {
+        item.classList.toggle('active', item === button);
       });
+
+      renderPackages();
+      if (selected) {
+        selected.replaceChildren();
+        selected.classList.add('hidden');
+      }
     });
   });
+
+  renderPackages();
 })();
 
-// Restore an existing login session when the page opens
 loadMember(false);
