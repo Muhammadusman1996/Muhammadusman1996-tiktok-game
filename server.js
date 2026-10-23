@@ -8,15 +8,16 @@ const path = require("path");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const MIN_PAYMENT_PKR = 1000;
+const MIN_PAYMENT_PKR = 2000;
 
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
+
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: "30kb" }));
 app.use(express.urlencoded({ extended: false, limit: "30kb" }));
-app.use(express.static(__dirname, { index: false }));
 
+// Database
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
 const DB_FILE = path.join(DATA_DIR, "db.json");
 
@@ -35,34 +36,24 @@ if (!fs.existsSync(DB_FILE)) {
 }
 
 function readDb() {
-  try {
-    const db = JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
+  const db = JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
 
-    if (!Array.isArray(db.customers)) db.customers = [];
-    if (!Array.isArray(db.payments)) db.payments = [];
+  if (!Array.isArray(db.customers)) db.customers = [];
+  if (!Array.isArray(db.payments)) db.payments = [];
 
-    if (!Number.isInteger(db.nextId)) {
-      db.nextId = db.customers.reduce(
-        (max, c) => Math.max(max, Number(c.id) || 0), 0
-      ) + 1;
-    }
-
-    if (!Number.isInteger(db.nextPaymentId)) {
-      db.nextPaymentId = db.payments.reduce(
-        (max, p) => Math.max(max, Number(p.id) || 0), 0
-      ) + 1;
-    }
-
-    return db;
-  } catch (error) {
-    console.error("Database error:", error.message);
-    return {
-      customers: [],
-      nextId: 1,
-      payments: [],
-      nextPaymentId: 1
-    };
+  if (!Number.isInteger(db.nextId)) {
+    db.nextId = db.customers.reduce(
+      (max, c) => Math.max(max, Number(c.id) || 0), 0
+    ) + 1;
   }
+
+  if (!Number.isInteger(db.nextPaymentId)) {
+    db.nextPaymentId = db.payments.reduce(
+      (max, p) => Math.max(max, Number(p.id) || 0), 0
+    ) + 1;
+  }
+
+  return db;
 }
 
 function writeDb(db) {
@@ -70,7 +61,9 @@ function writeDb(db) {
 }
 
 function cleanString(value, max = 60) {
-  return typeof value === "string" ? value.trim().slice(0, max) : "";
+  return typeof value === "string"
+    ? value.trim().slice(0, max)
+    : "";
 }
 
 function safeCustomer(c) {
@@ -85,19 +78,18 @@ function safeCustomer(c) {
   };
 }
 
-if (!process.env.SESSION_SECRET) {
-  console.error("ERROR: Render Environment میں SESSION_SECRET لگائیں۔");
-}
-if (!process.env.ADMIN_USERNAME) {
-  console.error("ERROR: Render Environment میں ADMIN_USERNAME لگائیں۔");
-}
-if (!process.env.ADMIN_PASSWORD_HASH) {
-  console.error("ERROR: Render Environment میں ADMIN_PASSWORD_HASH لگائیں۔");
+// Session configuration
+if (!process.env.SESSION_SECRET ||
+    !process.env.ADMIN_USERNAME ||
+    !process.env.ADMIN_PASSWORD_HASH) {
+  console.error(
+    "Set SESSION_SECRET, ADMIN_USERNAME and ADMIN_PASSWORD_HASH in Render Environment."
+  );
 }
 
 app.use(session({
   name: "royal.member.sid",
-  secret: process.env.SESSION_SECRET || "change-this-development-secret",
+  secret: process.env.SESSION_SECRET || "development-only-change-this-secret",
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -115,20 +107,37 @@ const authLimiter = rateLimit({
   legacyHeaders: false
 });
 
+// Authentication middleware
 function requireCustomer(req, res, next) {
   if (!req.session.customerId) {
-    return res.status(401).json({ error: "Please log in first." });
+    return res.status(401).json({
+      error: "Please log in first."
+    });
   }
 
-  const db = readDb();
+  let db;
+
+  try {
+    db = readDb();
+  } catch (error) {
+    console.error("Database read error:", error.message);
+    return res.status(500).json({ error: "Database unavailable." });
+  }
+
   const customer = db.customers.find(
-    c => c.id === req.session.customerId
+    c => String(c.id) === String(req.session.customerId)
   );
 
-  if (!customer || customer.status !== "approved") {
-    req.session.destroy(() => {});
+  if (!customer) {
+    return res.status(401).json({
+      error: "Customer account was not found. Please log in again."
+    });
+  }
+
+  if (customer.status !== "approved") {
     return res.status(403).json({
-      error: "Your account is not approved or is unavailable."
+      error: "Your account is not approved.",
+      status: customer.status
     });
   }
 
@@ -138,12 +147,14 @@ function requireCustomer(req, res, next) {
 
 function requireAdmin(req, res, next) {
   if (!req.session.isAdmin) {
-    return res.status(401).json({ error: "Admin login required." });
+    return res.status(401).json({
+      error: "Admin login required."
+    });
   }
   next();
 }
 
-// Website pages
+// Pages and static files
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
@@ -156,6 +167,27 @@ app.get("/style.css", (req, res) => {
   res.sendFile(path.join(__dirname, "style.css"));
 });
 
+app.get("/app.js", (req, res) => {
+  res.sendFile(path.join(__dirname, "app.js"));
+});
+
+app.get("/admin.js", (req, res) => {
+  res.sendFile(path.join(__dirname, "admin.js"));
+});
+
+// Prevent public access to the database directory.
+app.use((req, res, next) => {
+  if (/^\/data(?:\/|$)/i.test(req.path)) {
+    return res.status(404).end();
+  }
+  next();
+});
+
+app.use(express.static(__dirname, {
+  index: false,
+  dotfiles: "deny"
+}));
+
 // Customer registration
 app.post("/api/register", authLimiter, async (req, res) => {
   try {
@@ -166,20 +198,22 @@ app.post("/api/register", authLimiter, async (req, res) => {
 
     if (!name || !username || password.length < 6) {
       return res.status(400).json({
-        error: "Name, username, and password of at least 6 characters are required."
+        error: "Name, username and password of at least 6 characters are required."
       });
     }
 
     if (!/^[a-z0-9_.-]{3,30}$/.test(username)) {
       return res.status(400).json({
-        error: "Username must be 3–30 characters: letters, numbers, dot, _ or -."
+        error: "Username must contain 3–30 letters, numbers, dots, _ or -."
       });
     }
 
     const db = readDb();
 
     if (db.customers.some(c => c.username === username)) {
-      return res.status(409).json({ error: "Username already exists." });
+      return res.status(409).json({
+        error: "Username already exists."
+      });
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
@@ -203,8 +237,10 @@ app.post("/api/register", authLimiter, async (req, res) => {
       message: "Account created. Please wait for admin approval."
     });
   } catch (error) {
-    console.error("Registration error:", error);
-    return res.status(500).json({ error: "Registration failed." });
+    console.error("Registration error:", error.message);
+    return res.status(500).json({
+      error: "Registration failed."
+    });
   }
 });
 
@@ -220,7 +256,11 @@ app.post("/api/login", authLimiter, async (req, res) => {
       c => c.username === username
     );
 
-    if (!customer || !await bcrypt.compare(password, customer.passwordHash)) {
+    if (
+      !customer ||
+      !customer.passwordHash ||
+      !await bcrypt.compare(password, customer.passwordHash)
+    ) {
       return res.status(401).json({
         error: "Incorrect username or password."
       });
@@ -228,22 +268,27 @@ app.post("/api/login", authLimiter, async (req, res) => {
 
     if (customer.status !== "approved") {
       return res.status(403).json({
-        error: "Your account is pending admin approval."
+        error: "Your account is not approved yet.",
+        status: customer.status
       });
     }
 
     req.session.regenerate(err => {
       if (err) {
-        console.error("Session error:", err);
-        return res.status(500).json({ error: "Login failed." });
+        console.error("Customer session error:", err.message);
+        return res.status(500).json({
+          error: "Login session could not be created."
+        });
       }
 
       req.session.customerId = customer.id;
 
-      req.session.save(saveErr => {
-        if (saveErr) {
-          console.error("Session save error:", saveErr);
-          return res.status(500).json({ error: "Login failed." });
+      req.session.save(saveError => {
+        if (saveError) {
+          console.error("Customer session save error:", saveError.message);
+          return res.status(500).json({
+            error: "Login session could not be saved."
+          });
         }
 
         return res.json({
@@ -254,11 +299,14 @@ app.post("/api/login", authLimiter, async (req, res) => {
       });
     });
   } catch (error) {
-    console.error("Login error:", error);
-    return res.status(500).json({ error: "Login failed." });
+    console.error("Customer login error:", error.message);
+    return res.status(500).json({
+      error: "Login failed."
+    });
   }
 });
-// Get logged-in customer
+
+// Current customer
 app.get("/api/me", requireCustomer, (req, res) => {
   res.json({
     success: true,
@@ -273,7 +321,12 @@ app.post("/api/logout", (req, res) => {
       return res.status(500).json({ error: "Logout failed." });
     }
 
-    res.clearCookie("royal.member.sid");
+    res.clearCookie("royal.member.sid", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production"
+    });
+
     res.json({ success: true, message: "Logged out." });
   });
 });
@@ -290,7 +343,9 @@ app.post("/api/admin/login", authLimiter, async (req, res) => {
       !process.env.ADMIN_PASSWORD_HASH ||
       username !== process.env.ADMIN_USERNAME
     ) {
-      return res.status(401).json({ error: "Invalid admin credentials." });
+      return res.status(401).json({
+        error: "Invalid admin credentials."
+      });
     }
 
     const valid = await bcrypt.compare(
@@ -299,26 +354,35 @@ app.post("/api/admin/login", authLimiter, async (req, res) => {
     );
 
     if (!valid) {
-      return res.status(401).json({ error: "Invalid admin credentials." });
+      return res.status(401).json({
+        error: "Invalid admin credentials."
+      });
     }
 
     req.session.regenerate(err => {
       if (err) {
-        return res.status(500).json({ error: "Admin login failed." });
+        return res.status(500).json({
+          error: "Admin login failed."
+        });
       }
 
       req.session.isAdmin = true;
 
-      req.session.save(saveErr => {
-        if (saveErr) {
-          return res.status(500).json({ error: "Admin login failed." });
+      req.session.save(saveError => {
+        if (saveError) {
+          return res.status(500).json({
+            error: "Admin session could not be saved."
+          });
         }
 
-        res.json({ success: true, message: "Admin login successful." });
+        res.json({
+          success: true,
+          message: "Admin login successful."
+        });
       });
     });
   } catch (error) {
-    console.error("Admin login error:", error);
+    console.error("Admin login error:", error.message);
     res.status(500).json({ error: "Admin login failed." });
   }
 });
@@ -330,12 +394,17 @@ app.post("/api/admin/logout", requireAdmin, (req, res) => {
       return res.status(500).json({ error: "Logout failed." });
     }
 
-    res.clearCookie("royal.member.sid");
+    res.clearCookie("royal.member.sid", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production"
+    });
+
     res.json({ success: true, message: "Admin logged out." });
   });
 });
 
-// Admin dashboard summary
+// Admin dashboard
 app.get("/api/admin/dashboard", requireAdmin, (req, res) => {
   const db = readDb();
 
@@ -350,54 +419,87 @@ app.get("/api/admin/dashboard", requireAdmin, (req, res) => {
   });
 });
 
-// Admin: list customers
+// Admin customer list, including summary for admin.js
 app.get("/api/admin/customers", requireAdmin, (req, res) => {
   const db = readDb();
 
   res.json({
     success: true,
+    summary: {
+      total: db.customers.length,
+      pending: db.customers.filter(c => c.status === "pending").length,
+      approved: db.customers.filter(c => c.status === "approved").length,
+      rejected: db.customers.filter(c => c.status === "rejected").length
+    },
     customers: db.customers.map(safeCustomer)
   });
 });
 
-// Admin: approve/reject customer
-app.patch("/api/admin/customers/:id/status", requireAdmin, (req, res) => {
+// Shared handler for customer status updates.
+// Supports both the old admin.js URL and the explicit /status URL.
+function updateCustomerStatus(req, res) {
   const id = Number(req.params.id);
   const status = cleanString(req.body.status, 20);
 
-  if (!Number.isInteger(id) ||
-      !["pending", "approved", "rejected", "disabled"].includes(status)) {
-    return res.status(400).json({ error: "Invalid customer ID or status." });
+  if (
+    !Number.isSafeInteger(id) ||
+    !["pending", "approved", "rejected", "disabled"].includes(status)
+  ) {
+    return res.status(400).json({
+      error: "Invalid customer ID or status."
+    });
   }
 
   const db = readDb();
-  const customer = db.customers.find(c => c.id === id);
+  const customer = db.customers.find(c => Number(c.id) === id);
 
   if (!customer) {
-    return res.status(404).json({ error: "Customer not found." });
+    return res.status(404).json({
+      error: "Customer not found."
+    });
   }
 
   customer.status = status;
   writeDb(db);
 
-  res.json({
+  return res.json({
     success: true,
     message: "Customer status updated.",
     customer: safeCustomer(customer)
   });
-});
+}
 
-// Admin: update customer credits
+app.patch(
+  "/api/admin/customers/:id/status",
+  requireAdmin,
+  updateCustomerStatus
+);
+
+// Compatibility route for the older admin.js
+app.patch(
+  "/api/admin/customers/:id",
+  requireAdmin,
+  updateCustomerStatus
+);
+
+// Admin update credits
 app.patch("/api/admin/customers/:id/credits", requireAdmin, (req, res) => {
   const id = Number(req.params.id);
   const credits = Number(req.body.credits);
 
-  if (!Number.isInteger(id) || !Number.isFinite(credits) || credits < 0) {
-    return res.status(400).json({ error: "Enter a valid customer ID and credits." });
+  if (
+    !Number.isSafeInteger(id) ||
+    !Number.isSafeInteger(credits) ||
+    credits < 0 ||
+    credits > 100000000
+  ) {
+    return res.status(400).json({
+      error: "Enter a valid customer ID and credits."
+    });
   }
 
   const db = readDb();
-  const customer = db.customers.find(c => c.id === id);
+  const customer = db.customers.find(c => Number(c.id) === id);
 
   if (!customer) {
     return res.status(404).json({ error: "Customer not found." });
@@ -413,17 +515,21 @@ app.patch("/api/admin/customers/:id/credits", requireAdmin, (req, res) => {
   });
 });
 
-// Admin: update customer PKR balance
+// Admin update PKR balance
 app.patch("/api/admin/customers/:id/balance", requireAdmin, (req, res) => {
   const id = Number(req.params.id);
   const balancePkr = Number(req.body.balancePkr);
 
-  if (!Number.isInteger(id) || !Number.isFinite(balancePkr) || balancePkr < 0) {
+  if (
+    !Number.isSafeInteger(id) ||
+    !Number.isFinite(balancePkr) ||
+    balancePkr < 0
+  ) {
     return res.status(400).json({ error: "Enter a valid balance." });
   }
 
   const db = readDb();
-  const customer = db.customers.find(c => c.id === id);
+  const customer = db.customers.find(c => Number(c.id) === id);
 
   if (!customer) {
     return res.status(404).json({ error: "Customer not found." });
@@ -438,7 +544,8 @@ app.patch("/api/admin/customers/:id/balance", requireAdmin, (req, res) => {
     customer: safeCustomer(customer)
   });
 });
-// Customer: submit payment request
+
+// Customer submit payment
 app.post("/api/payments", requireCustomer, (req, res) => {
   const amount = Number(req.body.amount);
   const method = cleanString(req.body.method, 40);
@@ -446,7 +553,7 @@ app.post("/api/payments", requireCustomer, (req, res) => {
 
   if (!Number.isFinite(amount) || amount < MIN_PAYMENT_PKR) {
     return res.status(400).json({
-      error: "Minimum payment is Rs. 2000."
+      error: `Minimum payment is Rs. ${MIN_PAYMENT_PKR}.`
     });
   }
 
@@ -482,18 +589,18 @@ app.post("/api/payments", requireCustomer, (req, res) => {
   });
 });
 
-// Customer: view own payment history
+// Customer payment history
 app.get("/api/payments", requireCustomer, (req, res) => {
   const db = readDb();
 
   const payments = db.payments.filter(
-    p => p.customerId === req.customer.id
+    p => String(p.customerId) === String(req.customer.id)
   );
 
   res.json({ success: true, payments });
 });
 
-// Admin: view all payment requests
+// Admin payment list
 app.get("/api/admin/payments", requireAdmin, (req, res) => {
   const db = readDb();
 
@@ -503,13 +610,13 @@ app.get("/api/admin/payments", requireAdmin, (req, res) => {
   });
 });
 
-// Admin: approve or reject payment
+// Admin approve/reject payment
 app.patch("/api/admin/payments/:id/status", requireAdmin, (req, res) => {
   const id = Number(req.params.id);
   const status = cleanString(req.body.status, 20);
 
   if (
-    !Number.isInteger(id) ||
+    !Number.isSafeInteger(id) ||
     !["approved", "rejected"].includes(status)
   ) {
     return res.status(400).json({
@@ -518,7 +625,7 @@ app.patch("/api/admin/payments/:id/status", requireAdmin, (req, res) => {
   }
 
   const db = readDb();
-  const payment = db.payments.find(p => p.id === id);
+  const payment = db.payments.find(p => Number(p.id) === id);
 
   if (!payment) {
     return res.status(404).json({ error: "Payment not found." });
@@ -532,7 +639,7 @@ app.patch("/api/admin/payments/:id/status", requireAdmin, (req, res) => {
 
   if (status === "approved") {
     const customer = db.customers.find(
-      c => c.id === payment.customerId
+      c => String(c.id) === String(payment.customerId)
     );
 
     if (!customer) {
@@ -541,8 +648,8 @@ app.patch("/api/admin/payments/:id/status", requireAdmin, (req, res) => {
       });
     }
 
-    customer.balancePkr = Number(customer.balancePkr || 0)
-      + Number(payment.amount);
+    customer.balancePkr =
+      Number(customer.balancePkr || 0) + Number(payment.amount);
   }
 
   payment.status = status;
@@ -559,10 +666,7 @@ app.patch("/api/admin/payments/:id/status", requireAdmin, (req, res) => {
 
 // Health check
 app.get("/health", (req, res) => {
-  res.json({
-    success: true,
-    status: "running"
-  });
+  res.json({ success: true, status: "running" });
 });
 
 // Unknown API route
@@ -570,7 +674,15 @@ app.use("/api", (req, res) => {
   res.status(404).json({ error: "API route not found." });
 });
 
-// Start server
+// Error handler
+app.use((error, req, res, next) => {
+  console.error("Server error:", error.message);
+
+  if (res.headersSent) return next(error);
+
+  res.status(500).json({ error: "Internal server error." });
+});
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Royal Member server running on port ${PORT}`);
 });
