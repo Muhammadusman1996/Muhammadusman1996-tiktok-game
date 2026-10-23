@@ -147,3 +147,45 @@ $("#logoutBtn").addEventListener("click", async () => {
 
 // Check for an existing login session on page load
 loadMember(false);
+/* TikTok Followers Country Services */
+(() => {
+  const ttToggle = document.querySelector("#tiktokToggle");
+  const ttList = document.querySelector("#tiktokCountryList");
+  const ttArrow = document.querySelector("#ttArrow");
+  const ttSelected = document.querySelector("#ttSelected");
+
+  if (!ttToggle || !ttList || !ttArrow || !ttSelected) return;
+
+  ttToggle.addEventListener("click", () => {
+    const opening = ttList.classList.contains("hidden");
+    ttList.classList.toggle("hidden", !opening);
+    ttArrow.textContent = opening ? "⌃" : "⌄";
+  });
+
+  document.querySelectorAll(".tt-country").forEach(button => {
+    button.addEventListener("click", () => {
+      const country = button.dataset.country;
+      const flag = button.dataset.flag;
+      const mix = country === "All Mix";
+      const quantity = mix ? 3000 : 1000;
+      const price = mix ? 250 : 100;
+
+      ttSelected.replaceChildren();
+
+      const heading = document.createElement("h3");
+      heading.textContent = `${flag} ${country}`;
+
+      const service = document.createElement("p");
+      service.textContent = "Service: TikTok Followers";
+
+      const qty = document.createElement("p");
+      qty.textContent = `Quantity: ${quantity.toLocaleString()} Followers`;
+
+      const cost = document.createElement("p");
+      cost.textContent = `Price: Rs. ${price}`;
+
+      ttSelected.append(heading, service, qty, cost);
+      ttSelected.classList.remove("hidden");
+    });
+  });
+})();
