@@ -1,128 +1,167 @@
-const $ = (selector) => document.querySelector(selector);
+'use strict';
 
-const message = $("#message");
+const $ = (selector, root = document) => root.querySelector(selector);
+const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+
+const message = $('#message');
 
 function showMessage(text, bad = false) {
-  message.textContent = text;
-  message.className = "message " + (bad ? "error" : "success");
+  if (!message) return;
+  message.textContent = String(text || '');
+  message.className = `message ${bad ? 'error' : 'success'}`;
 }
 
 function showView(view) {
-  $("#loginForm").classList.toggle("hidden", view !== "login");
-  $("#registerForm").classList.toggle("hidden", view !== "register");
+  const loginForm = $('#loginForm');
+  const registerForm = $('#registerForm');
 
-  document.querySelectorAll(".tab").forEach(button => {
-    button.classList.toggle("active", button.dataset.view === view);
+  if (loginForm) loginForm.classList.toggle('hidden', view !== 'login');
+  if (registerForm) registerForm.classList.toggle('hidden', view !== 'register');
+
+  $$('.tab').forEach(button => {
+    button.classList.toggle('active', button.dataset.view === view);
   });
 
-  message.textContent = "";
+  if (message) message.textContent = '';
 }
 
-document.querySelectorAll(".tab").forEach(button => {
-  button.addEventListener("click", () => showView(button.dataset.view));
+$$('.tab').forEach(button => {
+  button.addEventListener('click', () => showView(button.dataset.view));
 });
 
 async function api(url, options = {}) {
   const response = await fetch(url, {
-    credentials: "same-origin",
+    credentials: 'same-origin',
     ...options,
     headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {})
+      ...(options.headers || {}),
+      ...(options.body && typeof options.body === 'string'
+        ? { 'Content-Type': 'application/json' }
+        : {})
     }
   });
 
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.error || `Request failed (${response.status})`);
+    throw new Error(
+      data.error || data.message || `Request failed (${response.status})`
+    );
   }
 
   return data;
 }
 
 // Customer registration
-$("#registerForm").addEventListener("submit", async event => {
-  event.preventDefault();
+const registerForm = $('#registerForm');
 
-  const form = event.currentTarget;
-  const button = form.querySelector('button[type="submit"], button:not([type])');
+if (registerForm) {
+  registerForm.addEventListener('submit', async event => {
+    event.preventDefault();
 
-  if (button) button.disabled = true;
+    const form = event.currentTarget;
+    const button = $('button[type="submit"], button:not([type])', form);
 
-  try {
-    const values = Object.fromEntries(new FormData(form));
+    if (button) button.disabled = true;
 
-    const result = await api("/api/register", {
-      method: "POST",
-      body: JSON.stringify(values)
-    });
+    try {
+      const values = Object.fromEntries(new FormData(form));
 
-    form.reset();
-    showMessage(
-      result.message || "Account created. Please wait for admin approval."
-    );
-  } catch (error) {
-    showMessage(error.message, true);
-  } finally {
-    if (button) button.disabled = false;
-  }
-});
+      const result = await api('/api/register', {
+        method: 'POST',
+        body: JSON.stringify(values)
+      });
+
+      form.reset();
+
+      showMessage(
+        result.message ||
+        'Account created. Please wait for admin approval.'
+      );
+    } catch (error) {
+      showMessage(error.message, true);
+    } finally {
+      if (button) button.disabled = false;
+    }
+  });
+}
 
 // Customer login
-$("#loginForm").addEventListener("submit", async event => {
-  event.preventDefault();
+const loginForm = $('#loginForm');
 
-  const form = event.currentTarget;
-  const button = form.querySelector('button[type="submit"], button:not([type])');
+if (loginForm) {
+  loginForm.addEventListener('submit', async event => {
+    event.preventDefault();
 
-  if (button) button.disabled = true;
+    const form = event.currentTarget;
+    const button = $('button[type="submit"], button:not([type])', form);
 
-  try {
-    const values = Object.fromEntries(new FormData(form));
+    if (button) button.disabled = true;
 
-    await api("/api/login", {
-      method: "POST",
-      body: JSON.stringify(values)
-    });
+    try {
+      const values = Object.fromEntries(new FormData(form));
 
-    form.reset();
+      await api('/api/login', {
+        method: 'POST',
+        body: JSON.stringify(values)
+      });
 
-    // Verify that the server session is working.
-    await loadMember(true);
-  } catch (error) {
-    showMessage(error.message, true);
-  } finally {
-    if (button) button.disabled = false;
-  }
-});
+      form.reset();
+
+      await loadMember(true);
+    } catch (error) {
+      showMessage(error.message, true);
+    } finally {
+      if (button) button.disabled = false;
+    }
+  });
+}
 
 // Load the logged-in customer
 async function loadMember(showError = false) {
   try {
-    const data = await api("/api/me");
+    const data = await api('/api/me');
+    const customer = data.customer || data.user;
 
-    if (!data.customer) {
-      throw new Error("Customer information was not returned by the server.");
+    if (!customer) {
+      throw new Error(
+        'Customer information was not returned by the server.'
+      );
     }
 
-    $("#memberName").textContent = "Welcome, " + data.customer.name;
-    $("#memberStatus").textContent = data.customer.status;
-    $("#memberCredits").textContent = data.customer.credits ?? 0;
+    const name = $('#memberName');
+    const status = $('#memberStatus');
+    const credits = $('#memberCredits');
 
-    $("#memberArea").classList.remove("hidden");
-    $("#loginForm").classList.add("hidden");
-    $("#registerForm").classList.add("hidden");
+    if (name) {
+      name.textContent =
+        `Welcome, ${customer.name || customer.username || 'Member'}`;
+    }
 
-    const tabs = document.querySelector(".tabs");
-    if (tabs) tabs.classList.add("hidden");
+    if (status) {
+      status.textContent = customer.status || 'Approved';
+    }
 
-    showMessage("You are logged in.");
+    if (credits) {
+      credits.textContent = String(customer.credits ?? 0);
+    }
+
+    const memberArea = $('#memberArea');
+
+    if (memberArea) memberArea.classList.remove('hidden');
+    if (loginForm) loginForm.classList.add('hidden');
+    if (registerForm) registerForm.classList.add('hidden');
+
+    const tabs = $('.tabs');
+    if (tabs) tabs.classList.add('hidden');
+
+    showMessage('You are logged in.');
+
     return true;
   } catch (error) {
     if (showError) {
       showMessage(
-        "Login/session check failed: " + error.message,
+        `Login/session check failed: ${error.message}`,
         true
       );
     }
@@ -132,153 +171,131 @@ async function loadMember(showError = false) {
 }
 
 // Customer logout
-$("#logoutBtn").addEventListener("click", async () => {
-  try {
-    await api("/api/logout", {
-      method: "POST",
-      body: JSON.stringify({})
-    });
+const logoutBtn = $('#logoutBtn');
 
-    location.reload();
-  } catch (error) {
-    showMessage(error.message, true);
-  }
-});
+if (logoutBtn) {
+  logoutBtn.addEventListener('click', async () => {
+    logoutBtn.disabled = true;
 
-// Check for an existing login session on page load
-loadMember(false);
-/* TikTok Followers Country Services */
-(() => {
-  const ttToggle = document.querySelector("#tiktokToggle");
-  const ttList = document.querySelector("#tiktokCountryList");
-  const ttArrow = document.querySelector("#ttArrow");
-  const ttSelected = document.querySelector("#ttSelected");
+    try {
+      await api('/api/logout', {
+        method: 'POST',
+        body: JSON.stringify({})
+      });
 
-  if (!ttToggle || !ttList || !ttArrow || !ttSelected) return;
-
-  ttToggle.addEventListener("click", () => {
-    const opening = ttList.classList.contains("hidden");
-    ttList.classList.toggle("hidden", !opening);
-    ttArrow.textContent = opening ? "⌃" : "⌄";
+      window.location.reload();
+    } catch (error) {
+      showMessage(error.message, true);
+      logoutBtn.disabled = false;
+    }
   });
+}
 
-  document.querySelectorAll(".tt-country").forEach(button => {
-    button.addEventListener("click", () => {
-      const country = button.dataset.country;
-      const flag = button.dataset.flag;
-      const mix = country === "All Mix";
-      const quantity = mix ? 3000 : 1000;
-      const price = mix ? 250 : 100;
-
-      ttSelected.replaceChildren();
-
-      const heading = document.createElement("h3");
-      heading.textContent = `${flag} ${country}`;
-
-      const service = document.createElement("p");
-      service.textContent = "Service: TikTok Followers";
-
-      const qty = document.createElement("p");
-      qty.textContent = `Quantity: ${quantity.toLocaleString()} Followers`;
-
-      const cost = document.createElement("p");
-      cost.textContent = `Price: Rs. ${price}`;
-
-      ttSelected.append(heading, service, qty, cost);
-      ttSelected.classList.remove("hidden");
-    });
-  });
-})();
-
-/* TikTok Followers Order Form - Add-on Only */
+// TikTok country selector and order form
 (() => {
-  const toggle = document.querySelector("#tiktokToggle");
-  const list = document.querySelector("#tiktokCountryList");
-  const arrow = document.querySelector("#ttArrow");
-  const selected = document.querySelector("#ttSelected");
+  const toggle = $('#tiktokToggle');
+  const list = $('#tiktokCountryList');
+  const arrow = $('#ttArrow');
+  const selected = $('#ttSelected');
 
   if (!toggle || !list || !arrow || !selected) return;
 
-  toggle.addEventListener("click", () => {
-    const opening = list.classList.contains("hidden");
-    list.classList.toggle("hidden", !opening);
-    toggle.setAttribute("aria-expanded", String(opening));
-    arrow.textContent = opening ? "⌃" : "⌄";
+  toggle.setAttribute(
+    'aria-expanded',
+    String(!list.classList.contains('hidden'))
+  );
+
+  // One toggle handler only
+  toggle.addEventListener('click', () => {
+    const opening = list.classList.contains('hidden');
+
+    list.classList.toggle('hidden', !opening);
+    toggle.setAttribute('aria-expanded', String(opening));
+    arrow.textContent = opening ? '⌃' : '⌄';
   });
 
-  document.querySelectorAll(".tt-country").forEach(button => {
-    button.addEventListener("click", () => {
-      const country = button.dataset.country;
-      const flag = button.dataset.flag || "🌐";
-      const isMix = country === "All Mix";
+  // One country handler per country button
+  $$('.tt-country', list).forEach(button => {
+    button.addEventListener('click', () => {
+      const country = (button.dataset.country || '').trim();
+      const flag = button.dataset.flag || '🌐';
+
+      if (!country) return;
+
+      const isMix = country.toLowerCase() === 'all mix';
       const quantity = isMix ? 3000 : 1000;
       const price = isMix ? 250 : 100;
 
       selected.replaceChildren();
-      selected.classList.remove("hidden");
+      selected.classList.remove('hidden');
 
-      const heading = document.createElement("h3");
+      const heading = document.createElement('h3');
       heading.textContent = `${flag} ${country} TikTok Followers`;
 
-      const details = document.createElement("p");
+      const details = document.createElement('p');
       details.textContent =
         `Quantity: ${quantity.toLocaleString()} Followers | Price: Rs. ${price}`;
 
-      const form = document.createElement("form");
-      form.id = "ttOrderForm";
+      const form = document.createElement('form');
+      form.id = 'ttOrderForm';
 
-      const label = document.createElement("label");
-      label.htmlFor = "ttProfileLink";
-      label.textContent = "TikTok Profile Link";
+      const label = document.createElement('label');
+      label.htmlFor = 'ttProfileLink';
+      label.textContent = 'TikTok Profile Link';
 
-      const input = document.createElement("input");
-      input.id = "ttProfileLink";
-      input.type = "url";
-      input.placeholder = "https://www.tiktok.com/@username";
+      const input = document.createElement('input');
+      input.id = 'ttProfileLink';
+      input.name = 'profileLink';
+      input.type = 'url';
+      input.autocomplete = 'url';
+      input.placeholder = 'https://www.tiktok.com/@username';
       input.required = true;
 
-      const submit = document.createElement("button");
-      submit.type = "submit";
-      submit.className = "primary";
-      submit.textContent = "Submit Request";
+      const submit = document.createElement('button');
+      submit.type = 'submit';
+      submit.className = 'primary';
+      submit.textContent = 'Submit Request';
 
-      const status = document.createElement("p");
-      status.setAttribute("role", "status");
+      const status = document.createElement('p');
+      status.setAttribute('role', 'status');
 
       form.append(label, input, submit, status);
       selected.append(heading, details, form);
 
-      form.addEventListener("submit", async event => {
+      form.addEventListener('submit', async event => {
         event.preventDefault();
 
         let url;
+
         try {
           url = new URL(input.value.trim());
         } catch {
-          status.textContent = "Please enter a valid TikTok profile link.";
+          status.textContent =
+            'Please enter a valid TikTok profile link.';
           return;
         }
 
-        if (
-          url.protocol !== "https:" ||
-          !/(^|\.)tiktok\.com$/i.test(url.hostname) ||
-          !/^\/@[\w.-]+\/?$/.test(url.pathname)
-        ) {
-          status.textContent = "Enter a valid TikTok profile URL.";
+        const validTikTokUrl =
+          url.protocol === 'https:' &&
+          /(^|\.)tiktok\.com$/i.test(url.hostname) &&
+          /^\/@[\w.-]+\/?$/.test(url.pathname);
+
+        if (!validTikTokUrl) {
+          status.textContent =
+            'Enter a valid TikTok profile URL, such as https://www.tiktok.com/@username.';
           return;
         }
 
         submit.disabled = true;
-        submit.textContent = "Submitting...";
+        submit.textContent = 'Submitting...';
+        status.textContent = '';
 
         try {
-          const response = await fetch("/api/orders", {
-            method: "POST",
-            credentials: "same-origin",
-            headers: { "Content-Type": "application/json" },
+          const result = await api('/api/orders', {
+            method: 'POST',
             body: JSON.stringify({
-              platform: "TikTok",
-              service: "Followers",
+              platform: 'TikTok',
+              service: 'Followers',
               country,
               profileLink: url.href,
               quantity,
@@ -286,36 +303,34 @@ loadMember(false);
             })
           });
 
-          const result = await response.json().catch(() => ({}));
-
-          if (!response.ok) {
-            throw new Error(result.error || "Request failed.");
-          }
-
           selected.replaceChildren();
 
-          const success = document.createElement("div");
-          success.className = "tt-order-success";
+          const success = document.createElement('div');
+          success.className = 'tt-order-success';
 
-          const icon = document.createElement("div");
-          icon.className = "tt-success-icon";
-          icon.textContent = "✓";
+          const icon = document.createElement('div');
+          icon.className = 'tt-success-icon';
+          icon.textContent = '✓';
 
-          const title = document.createElement("h3");
-          title.textContent = "Request Submitted Successfully!";
+          const title = document.createElement('h3');
+          title.textContent = 'Request Submitted Successfully!';
 
-          const text = document.createElement("p");
+          const text = document.createElement('p');
           text.textContent =
-            result.message || "Your request has been received.";
+            result.message ||
+            `Your request #${result.order?.id || ''} has been received.`;
 
           success.append(icon, title, text);
           selected.append(success);
         } catch (error) {
           status.textContent = error.message;
           submit.disabled = false;
-          submit.textContent = "Submit Request";
+          submit.textContent = 'Submit Request';
         }
       });
     });
   });
 })();
+
+// Restore an existing login session when the page opens
+loadMember(false);
