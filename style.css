@@ -420,3 +420,73 @@ td {
     padding: 12px;
   }
 }
+/* TikTok Followers Country Services */
+.tt-main-btn {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  margin-top: 18px;
+  border: 1px solid #d6ad45;
+  border-radius: 12px;
+  background: linear-gradient(120deg, #101827, #18385b);
+  color: #f5ca58;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.tt-country-list {
+  margin-top: 12px;
+  padding: 12px;
+  background: #101827;
+  color: #fff;
+  border: 1px solid #34465e;
+  border-radius: 12px;
+}
+
+.tt-country-list h3 {
+  margin: 5px 0 14px;
+  color: #f5ca58;
+}
+
+.tt-country {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 5px;
+  width: 100%;
+  padding: 13px;
+  margin-bottom: 8px;
+  border: 1px solid #34465e;
+  border-radius: 9px;
+  background: #19283c;
+  color: white;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tt-country b {
+  color: #f5ca58;
+}
+
+.tt-country:hover,
+.tt-country:focus {
+  border-color: #f5ca58;
+  background: #243b56;
+}
+
+.tt-selected {
+  padding: 14px;
+  margin-top: 12px;
+  border: 1px solid #d6ad45;
+  border-radius: 10px;
+  color: #f5ca58;
+}
+
+@media (min-width: 520px) {
+  .tt-country {
+    grid-template-columns: 1fr 1fr auto;
+    align-items: center;
+  }
+}
