@@ -1,296 +1,758 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#090b12">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080d1c">
   <title>TikTok Game • Member Portal</title>
-  <link rel="stylesheet" href="/style.css">
+
+  <style>
+    :root {
+      --bg: #080d1c;
+      --panel: #111a30;
+      --panel2: #172440;
+      --blue: #1677ff;
+      --cyan: #42d9ff;
+      --gold: #ffca62;
+      --text: #f4f7ff;
+      --muted: #aab7d1;
+      --border: rgba(255,255,255,.12);
+      --green: #36d399;
+      --red: #ff667a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 20px;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, #12366c 0, transparent 38%),
+        radial-gradient(circle at bottom right, #20194c 0, transparent 35%),
+        var(--bg);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    button, input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .brand {
+      text-align: center;
+      padding: 15px 10px 25px;
+    }
+
+    .logo {
+      display: inline-grid;
+      place-items: center;
+      width: 52px;
+      height: 52px;
+      margin-bottom: 8px;
+      border-radius: 16px;
+      color: #07101e;
+      background: linear-gradient(135deg, var(--gold), #fff0b8);
+      font-size: 30px;
+      font-weight: 900;
+    }
+
+    .brand h1 {
+      margin: 4px 0;
+      font-size: clamp(24px, 5vw, 35px);
+      letter-spacing: 2px;
+    }
+
+    .brand h1 span {
+      color: var(--cyan);
+    }
+
+    .brand p {
+      margin: 7px 0 0;
+      color: var(--gold);
+      font-size: 11px;
+      letter-spacing: 4px;
+    }
+
+    .card {
+      width: 100%;
+      padding: 25px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: linear-gradient(145deg, rgba(20,32,57,.97), rgba(10,17,33,.98));
+      box-shadow: 0 15px 45px rgba(0,0,0,.25);
+    }
+
+    .auth-card {
+      max-width: 500px;
+      margin: 0 auto 20px;
+    }
+
+    .eyebrow {
+      margin-bottom: 22px;
+      color: var(--gold);
+      text-align: center;
+      font-size: 11px;
+      letter-spacing: 2px;
+    }
+
+    h2, h3 {
+      margin-top: 0;
+    }
+
+    h2 {
+      font-size: 25px;
+    }
+
+    .sub {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .field {
+      display: block;
+      margin: 17px 0;
+    }
+
+    .field span,
+    label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .field span {
+      display: block;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+
+    input {
+      display: block;
+      width: 100%;
+      min-height: 47px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      outline: none;
+      color: white;
+      background: #091226;
+    }
+
+    input:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(66,217,255,.1);
+    }
+
+    button:disabled {
+      opacity: .65;
+      cursor: wait;
+    }
+
+    .btn,
+    .primary {
+      display: block;
+      width: 100%;
+      min-height: 46px;
+      padding: 12px 16px;
+      border: 0;
+      border-radius: 10px;
+      color: #07101e;
+      background: linear-gradient(135deg, var(--gold), #ffe9a7);
+      font-weight: 800;
+    }
+
+    .secondary {
+      width: auto;
+      color: white;
+      background: var(--blue);
+    }
+
+    .switch {
+      width: 100%;
+      margin-top: 15px;
+      padding: 13px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      background: var(--panel2);
+    }
+
+    .switch strong {
+      color: var(--cyan);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .message {
+      margin-top: 14px;
+      padding: 0;
+      color: var(--green);
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .message.error {
+      color: var(--red);
+    }
+
+    .foot {
+      margin-top: 22px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    .member-info-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 16px;
+      padding: 17px;
+      border: 1px solid rgba(66,217,255,.35);
+      border-radius: 14px;
+      background: linear-gradient(110deg, #102f67, #101a35 65%, #292044);
+    }
+
+    .member-info-item {
+      flex: 1 1 130px;
+      min-width: 0;
+    }
+
+    .member-info-item span {
+      display: block;
+      margin-bottom: 7px;
+      color: #b6c9ec;
+      font-size: 10px;
+      letter-spacing: 1px;
+    }
+
+    .member-info-item strong {
+      color: var(--gold);
+      overflow-wrap: anywhere;
+    }
+
+    .member-info-bar .secondary {
+      width: auto;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 18px 0;
+    }
+
+    .stat {
+      padding: 17px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--panel2);
+    }
+
+    .stat span {
+      display: block;
+      margin-bottom: 9px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .stat strong {
+      color: var(--gold);
+      overflow-wrap: anywhere;
+    }
+
+    .service-card {
+      margin-top: 20px;
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      background: rgba(8,16,34,.75);
+    }
+
+    .service-title {
+      margin-bottom: 8px;
+      color: var(--gold);
+      font-size: 22px;
+    }
+
+    .service-description {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .price-note {
+      margin: 14px 0;
+      padding: 13px;
+      border-left: 4px solid var(--cyan);
+      border-radius: 7px;
+      color: #eaf6ff;
+      background: rgba(22,119,255,.13);
+      line-height: 1.7;
+      font-size: 13px;
+    }
+
+    .country-toggle {
+      display: flex;
+      width: 100%;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 15px;
+      border: 1px solid rgba(66,217,255,.4);
+      border-radius: 11px;
+      color: white;
+      background: #10284d;
+      text-align: left;
+      font-weight: 700;
+    }
+
+    #ttArrow {
+      color: var(--gold);
+      font-size: 22px;
+    }
+
+    #tiktokCountryList {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .tt-country {
+      padding: 13px 10px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      color: var(--text);
+      background: #131f38;
+      text-align: left;
+      overflow-wrap: anywhere;
+    }
+
+    .tt-country:hover,
+    .tt-country:focus {
+      border-color: var(--cyan);
+      background: #18345d;
+    }
+
+    .tt-country[data-country="All Mix"] {
+      grid-column: 1 / -1;
+      border-color: var(--gold);
+      color: var(--gold);
+      background: #302746;
+    }
+
+    #ttSelected {
+      margin-top: 16px;
+      padding: 17px;
+      border: 1px solid rgba(255,202,98,.35);
+      border-radius: 12px;
+      background: #101b31;
+    }
+
+    #ttSelected h3 {
+      color: var(--gold);
+      line-height: 1.5;
+    }
+
+    #ttSelected p {
+      color: var(--muted);
+      line-height: 1.6;
+      overflow-wrap: anywhere;
+    }
+
+    #ttOrderForm label {
+      display: block;
+      margin: 14px 0 8px;
+    }
+
+    #ttOrderForm input {
+      margin-bottom: 14px;
+    }
+
+    .tt-order-success {
+      text-align: center;
+    }
+
+    .tt-success-icon {
+      display: grid;
+      place-items: center;
+      width: 55px;
+      height: 55px;
+      margin: 0 auto 14px;
+      border-radius: 50%;
+      color: #062219;
+      background: var(--green);
+      font-size: 30px;
+      font-weight: 900;
+    }
+
+    #transactions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .txn {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--panel2);
+    }
+
+    .txn small {
+      display: block;
+      margin-top: 5px;
+      color: var(--muted);
+    }
+
+    .txn strong {
+      color: var(--gold);
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 12px;
+      }
+
+      .card {
+        padding: 18px;
+        border-radius: 15px;
+      }
+
+      .stats {
+        grid-template-columns: 1fr;
+      }
+
+      #tiktokCountryList {
+        grid-template-columns: 1fr;
+      }
+
+      .tt-country[data-country="All Mix"] {
+        grid-column: auto;
+      }
+
+      .member-info-bar {
+        align-items: stretch;
+      }
+
+      .member-info-bar .secondary {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
+
 <body>
-<main class="shell">
+  <main class="wrap">
 
-  <header class="top">
-    <div class="logo">TT</div>
-    <div class="brand">
-      <h1>TikTok Game</h1>
-      <p>MEMBER PORTAL</p>
-    </div>
-  </header>
+    <header class="brand">
+      <div class="logo">✦</div>
+      <h1>TIKTOK <span>GAME</span></h1>
+      <p>SECURE MEMBER PORTAL</p>
+    </header>
 
-  <section class="panel">
+    <!-- LOGIN AND REGISTRATION -->
+    <section class="card auth-card" id="authCard">
+      <div class="eyebrow">✧ EXCLUSIVE • SECURE • PREMIUM ✧</div>
 
-    <div class="welcome">
-      <span class="eyebrow">MEMBER ACCESS</span>
-      <h2 id="authTitle">Welcome Back</h2>
-      <p id="authSubtitle">Login to access your member account</p>
-    </div>
-
-    <div class="tabs">
-      <button type="button" class="tab active"
-        data-view="login" onclick="showAuth('login')">
-        Login
-      </button>
-      <button type="button" class="tab"
-        data-view="register" onclick="showAuth('register')">
-        New Account
-      </button>
-    </div>
-
-    <form id="loginForm" class="form">
-      <label for="loginUsername">USERNAME</label>
-      <div class="input-wrap">
-        <span class="field-icon" aria-hidden="true">♙</span>
-        <input id="loginUsername" name="username"
-          placeholder="Enter your username"
-          required autocomplete="username">
-      </div>
-
-      <label for="loginPassword">PASSWORD</label>
-      <div class="input-wrap">
-        <span class="field-icon" aria-hidden="true">♙</span>
-        <input id="loginPassword" name="password"
-          type="password" placeholder="Enter your password"
-          required autocomplete="current-password">
-        <button class="toggle-password" type="button"
-          onclick="togglePassword('loginPassword', this)"
-          aria-label="Show password">Show</button>
-      </div>
-
-      <button class="primary" type="submit">
-        <span>➜</span> Login
-      </button>
-
-      <p class="switch-note">
-        Don't have an account?
-        <button type="button" class="text-button"
-          onclick="showAuth('register')">Create Account</button>
-      </p>
-    </form>
-
-    <form id="registerForm" class="form hidden">
-      <label for="registerName">FULL NAME</label>
-      <div class="input-wrap">
-        <span class="field-icon" aria-hidden="true">♙</span>
-        <input id="registerName" name="name"
-          placeholder="Enter your full name"
-          required minlength="2" autocomplete="name">
-      </div>
-
-      <label for="registerUsername">USERNAME</label>
-      <div class="input-wrap">
-        <span class="field-icon" aria-hidden="true">♙</span>
-        <input id="registerUsername" name="username"
-          placeholder="Choose a username"
-          required minlength="3" maxlength="30"
-          autocomplete="username">
-      </div>
-
-      <label for="registerPassword">PASSWORD</label>
-      <div class="input-wrap">
-        <span class="field-icon" aria-hidden="true">♙</span>
-        <input id="registerPassword" name="password"
-          type="password" placeholder="At least 8 characters"
-          required minlength="8" autocomplete="new-password">
-        <button class="toggle-password" type="button"
-          onclick="togglePassword('registerPassword', this)"
-          aria-label="Show password">Show</button>
-      </div>
-
-      <button class="primary" type="submit">
-        <span>✦</span> Create Account
-      </button>
-
-      <p class="switch-note">
-        Already registered?
-        <button type="button" class="text-button"
-          onclick="showAuth('login')">Login</button>
-      </p>
-    </form>
-
-    <div id="message" class="message" role="status"
-      aria-live="polite"></div>
-
-    <!-- Member area: hidden until login -->
-    <section id="memberArea" class="member hidden">
-      <div class="member-icon">✦</div>
-      <h2>Member Dashboard</h2>
-      <p id="memberName"></p>
-      <p>Status: <b id="memberStatus"></b></p>
-      <p>Credits: <b id="memberCredits"></b></p>
-
-      <button id="logoutBtn" class="secondary" type="button">
-        Logout
-      </button>
-
-      <!-- TikTok Followers: inside member area -->
-      <section id="tiktokSection">
-        <button type="button" id="tiktokToggle"
-          class="tt-main-btn" aria-expanded="false"
-          aria-controls="tiktokCountryList">
-          <span>🎵 TikTok Followers</span>
-          <span id="ttArrow">⌄</span>
+      <div class="tabs" role="group" aria-label="Account options">
+        <button class="switch tab active" type="button" data-view="login">
+          Login
         </button>
+        <button class="switch tab" type="button" data-view="register">
+          Create Account
+        </button>
+      </div>
 
-        <div id="tiktokCountryList"
-          class="tt-country-list hidden">
-          <h3>🌎 Select Country</h3>
+      <form id="loginForm">
+        <h2>Member Login</h2>
+        <p class="sub">Enter your username and password to access your account.</p>
 
-          <button type="button" class="tt-country"
-            data-country="UK" data-flag="🇬🇧">
-            <span>🇬🇧 UK</span>
-            <span>1,000 Followers</span>
-            <b>Rs. 100</b>
-          </button>
+        <label class="field">
+          <span>USERNAME</span>
+          <input
+            name="username"
+            autocomplete="username"
+            minlength="3"
+            required
+            placeholder="Enter username">
+        </label>
 
-          <button type="button" class="tt-country"
-            data-country="USA" data-flag="🇺🇸">
-            <span>🇺🇸 USA</span>
-            <span>1,000 Followers</span>
-            <b>Rs. 100</b>
-          </button>
+        <label class="field">
+          <span>PASSWORD</span>
+          <input
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+            placeholder="Enter password">
+        </label>
 
-          <button type="button" class="tt-country"
-            data-country="China" data-flag="🇨🇳">
-            <span>🇨🇳 China</span>
-            <span>1,000 Followers</span>
-            <b>Rs. 100</b>
-          </button>
+        <button class="btn" type="submit">Secure Login ↗</button>
+      </form>
 
-          <button type="button" class="tt-country"
-            data-country="Japan" data-flag="🇯🇵">
-            <span>🇯🇵 Japan</span>
-            <span>1,000 Followers</span>
-            <b>Rs. 100</b>
-          </button>
+      <form id="registerForm" class="hidden">
+        <h2>Create Account</h2>
+        <p class="sub">Create your account. Admin approval may be required before using services.</p>
 
-          <button type="button" class="tt-country"
-            data-country="New York" data-flag="🗽">
-            <span>🗽 New York</span>
-            <span>1,000 Followers</span>
-            <b>Rs. 100</b>
-          </button>
+        <label class="field">
+          <span>FULL NAME</span>
+          <input
+            name="name"
+            minlength="2"
+            required
+            autocomplete="name"
+            placeholder="Enter full name">
+        </label>
 
-          <button type="button" class="tt-country"
-            data-country="Afghanistan" data-flag="🇦🇫">
-            <span>🇦🇫 Afghanistan</span>
-            <span>1,000 Followers</span>
-            <b>Rs. 100</b>
-          </button>
+        <label class="field">
+          <span>USERNAME</span>
+          <input
+            name="username"
+            minlength="3"
+            pattern="[A-Za-z0-9_.-]+"
+            required
+            autocomplete="username"
+            placeholder="Choose a username">
+        </label>
 
-          <button type="button" class="tt-country"
-            data-country="India" data-flag="🇮🇳">
-            <span>🇮🇳 India</span>
-            <span>1,000 Followers</span>
-            <b>Rs. 100</b>
-          </button>
+        <label class="field">
+          <span>PASSWORD</span>
+          <input
+            name="password"
+            type="password"
+            minlength="8"
+            required
+            autocomplete="new-password"
+            placeholder="Create a strong password">
+        </label>
 
-          <button type="button" class="tt-country"
-            data-country="New Zealand" data-flag="🇳🇿">
-            <span>🇳🇿 New Zealand</span>
-            <span>1,000 Followers</span>
-            <b>Rs. 100</b>
-          </button>
+        <button class="btn" type="submit">Create Account ✦</button>
+      </form>
 
-          <button type="button" class="tt-country"
-            data-country="Sri Lanka" data-flag="🇱🇰">
-            <span>🇱🇰 Sri Lanka</span>
-            <span>1,000 Followers</span>
-            <b>Rs. 100</b>
-          </button>
+      <div id="message" class="message" role="status" aria-live="polite"></div>
 
-          <button type="button" class="tt-country"
-            data-country="Africa" data-flag="🌍">
-            <span>🌍 Africa</span>
-            <span>1,000 Followers</span>
-            <b>Rs. 100</b>
-          </button>
-
-          <button type="button" class="tt-country"
-            data-country="Saudi Arabia" data-flag="🇸🇦">
-            <span>🇸🇦 Saudi Arabia</span>
-            <span>1,000 Followers</span>
-            <b>Rs. 100</b>
-          </button>
-
-          <button type="button" class="tt-country"
-            data-country="Indonesia" data-flag="🇮🇩">
-            <span>🇮🇩 Indonesia</span>
-            <span>1,000 Followers</span>
-            <b>Rs. 100</b>
-          </button>
-
-          <button type="button" class="tt-country"
-            data-country="Pakistan" data-flag="🇵🇰">
-            <span>🇵🇰 Pakistan</span>
-            <span>1,000 Followers</span>
-            <b>Rs. 100</b>
-          </button>
-
-          <button type="button" class="tt-country"
-            data-country="All Mix" data-flag="🌐">
-            <span>🌐 All Mix</span>
-            <span>3,000 Followers</span>
-            <b>Rs. 250</b>
-          </button>
-
-          <div id="ttSelected" class="tt-selected hidden"
-            aria-live="polite"></div>
-        </div>
-      </section>
+      <p class="foot">🔒 Secure Member Access</p>
     </section>
 
-    <div class="security-note">
-      <span>🔒</span>
-      <span>Your account is protected.<br>
-      New accounts require admin approval.</span>
-    </div>
+    <!-- MEMBER DASHBOARD -->
+    <section id="memberArea" class="hidden">
 
-  </section>
+      <div class="card">
+        <div class="member-info-bar">
+          <div class="member-info-item">
+            <span>MEMBER</span>
+            <strong id="memberName">Welcome, Member</strong>
+          </div>
 
-  <footer>
-    © TikTok Game • Secure Member Portal
-  </footer>
-</main>
+          <div class="member-info-item">
+            <span>ACCOUNT STATUS</span>
+            <strong id="memberStatus">Pending</strong>
+          </div>
 
-<script>
-function showAuth(mode) {
-  const login = mode === "login";
+          <div class="member-info-item">
+            <span>AVAILABLE CREDITS</span>
+            <strong id="memberCredits">0</strong>
+          </div>
 
-  document.getElementById("loginForm").classList.toggle(
-    "hidden", !login
-  );
-  document.getElementById("registerForm").classList.toggle(
-    "hidden", login
-  );
+          <button class="btn secondary" id="logoutBtn" type="button">
+            Log Out
+          </button>
+        </div>
 
-  document.querySelector('[data-view="login"]').classList.toggle(
-    "active", login
-  );
-  document.querySelector('[data-view="register"]').classList.toggle(
-    "active", !login
-  );
+        <div class="stats">
+          <div class="stat">
+            <span>AVAILABLE CREDITS</span>
+            <strong id="balanceStat">0</strong>
+          </div>
 
-  document.getElementById("authTitle").textContent =
-    login ? "Welcome Back" : "Create Account";
+          <div class="stat">
+            <span>ACCOUNT STATUS</span>
+            <strong id="statusStat">Pending</strong>
+          </div>
 
-  document.getElementById("authSubtitle").textContent =
-    login ? "Login to access your member account" :
-    "Join us and create your member account";
-}
+          <div class="stat">
+            <span>MEMBER ID</span>
+            <strong id="memberIdStat">—</strong>
+          </div>
+        </div>
+      </div>
 
-function togglePassword(id, button) {
-  const input = document.getElementById(id);
-  const show = input.type === "password";
+      <!-- TIKTOK FOLLOWERS SERVICE -->
+      <section class="service-card" id="tiktokService">
+        <h2 class="service-title">🎵 TikTok Followers</h2>
 
-  input.type = show ? "text" : "password";
-  button.textContent = show ? "Hide" : "Show";
-  button.setAttribute(
-    "aria-label", show ? "Hide password" : "Show password"
-  );
-}
-</script>
+        <p class="service-description">
+          Select your target country, enter your TikTok profile link,
+          and submit your order request.
+        </p>
 
-<script src="/app.js"></script>
+        <div class="price-note">
+          <strong>Standard Countries:</strong> 1,000 Followers — Rs. 100
+          <br>
+          <strong>All Mix:</strong> 3,000 Followers — Rs. 250
+          <br>
+          Select a country below to continue.
+        </div>
+
+        <button
+          id="tiktokToggle"
+          class="country-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="tiktokCountryList">
+
+          <span>🌍 Select TikTok Followers Country</span>
+          <span id="ttArrow" aria-hidden="true">⌄</span>
+        </button>
+
+        <div id="tiktokCountryList" class="hidden">
+
+          <button class="tt-country" type="button"
+            data-country="USA" data-flag="🇺🇸">
+            🇺🇸 USA — Rs. 100
+          </button>
+
+          <button class="tt-country" type="button"
+            data-country="United Kingdom" data-flag="🇬🇧">
+            🇬🇧 United Kingdom — Rs. 100
+          </button>
+
+          <button class="tt-country" type="button"
+            data-country="Canada" data-flag="🇨🇦">
+            🇨🇦 Canada — Rs. 100
+          </button>
+
+          <button class="tt-country" type="button"
+            data-country="Australia" data-flag="🇦🇺">
+            🇦🇺 Australia — Rs. 100
+          </button>
+
+          <button class="tt-country" type="button"
+            data-country="Germany" data-flag="🇩🇪">
+            🇩🇪 Germany — Rs. 100
+          </button>
+
+          <button class="tt-country" type="button"
+            data-country="France" data-flag="🇫🇷">
+            🇫🇷 France — Rs. 100
+          </button>
+
+          <button class="tt-country" type="button"
+            data-country="Italy" data-flag="🇮🇹">
+            🇮🇹 Italy — Rs. 100
+          </button>
+
+          <button class="tt-country" type="button"
+            data-country="Spain" data-flag="🇪🇸">
+            🇪🇸 Spain — Rs. 100
+          </button>
+
+          <button class="tt-country" type="button"
+            data-country="Turkey" data-flag="🇹🇷">
+            🇹🇷 Turkey — Rs. 100
+          </button>
+
+          <button class="tt-country" type="button"
+            data-country="Pakistan" data-flag="🇵🇰">
+            🇵🇰 Pakistan — Rs. 100
+          </button>
+
+          <button class="tt-country" type="button"
+            data-country="India" data-flag="🇮🇳">
+            🇮🇳 India — Rs. 100
+          </button>
+
+          <button class="tt-country" type="button"
+            data-country="Brazil" data-flag="🇧🇷">
+            🇧🇷 Brazil — Rs. 100
+          </button>
+
+          <button class="tt-country" type="button"
+            data-country="Indonesia" data-flag="🇮🇩">
+            🇮🇩 Indonesia — Rs. 100
+          </button>
+
+          <button class="tt-country" type="button"
+            data-country="All Mix" data-flag="🌐">
+            🌐 All Mix — 3,000 Followers — Rs. 250
+          </button>
+
+        </div>
+
+        <div id="ttSelected" class="hidden" aria-live="polite"></div>
+      </section>
+
+      <!-- CREDIT HISTORY -->
+      <section class="service-card">
+        <h2>Credit History</h2>
+        <p class="service-description">
+          Your account transaction history will appear here when provided by the server.
+        </p>
+        <div id="transactions"></div>
+      </section>
+
+    </section>
+
+    <footer class="foot">
+      TIKTOK GAME • MEMBER PORTAL
+      <br>
+      Secure Member Access
+    </footer>
+
+  </main>
+
+  <script src="/app.js" defer></script>
+
+  <script>
+    // Keep Login and Create Account forms compatible with app.js.
+    document.addEventListener('DOMContentLoaded', function () {
+      const loginForm = document.getElementById('loginForm');
+      const registerForm = document.getElementById('registerForm');
+      const tabs = document.querySelectorAll('.tab');
+
+      function showAuthView(view) {
+        loginForm.classList.toggle('hidden', view !== 'login');
+        registerForm.classList.toggle('hidden', view !== 'register');
+
+        tabs.forEach(function (tab) {
+          tab.classList.toggle('active', tab.dataset.view === view);
+        });
+
+        const message = document.getElementById('message');
+        if (message) {
+          message.textContent = '';
+          message.className = 'message';
+        }
+      }
+
+      tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          showAuthView(tab.dataset.view);
+        });
+      });
+    });
+  </script>
 </body>
 </html>
