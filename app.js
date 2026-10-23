@@ -66,12 +66,14 @@ if (registerForm) {
 
     try {
       const values = Object.fromEntries(new FormData(form));
+
       const result = await api('/api/register', {
         method: 'POST',
         body: JSON.stringify(values)
       });
 
       form.reset();
+
       showMessage(
         result.message || 'Account created. Please wait for admin approval.'
       );
@@ -187,19 +189,24 @@ if (logoutBtn) {
       { name: 'Canada', quantity: 1000, price: 100, flag: '🇨🇦' },
       { name: 'Australia', quantity: 1000, price: 100, flag: '🇦🇺' }
     ],
+
     Likes: [
       { name: 'Mix Likes', quantity: 1000, price: 150, flag: '🌐' },
       { name: 'All in One Likes', quantity: 1000, price: 50, flag: '🌐' }
     ],
+
     Views: [
       { name: 'Standard', quantity: 2000, price: 10, flag: '▶️' }
     ],
+
     'Add Favourite': [
       { name: 'Standard', quantity: 1000, price: 500, flag: '⭐' }
     ],
+
     Share: [
       { name: 'Standard', quantity: 1000, price: 500, flag: '🔗' }
     ],
+
     Comment: [
       { name: 'Standard', quantity: 1000, price: 500, flag: '💬' }
     ]
@@ -215,14 +222,18 @@ if (logoutBtn) {
 
     picker.replaceChildren();
 
-    services[selectedService].forEach(item => {
+    const packages = services[selectedService] || [];
+
+    packages.forEach(item => {
       const button = document.createElement('button');
+
       button.type = 'button';
       button.className = 'tt-country';
       button.textContent =
         `${item.flag} ${item.name} — ${item.quantity.toLocaleString()} — Rs. ${item.price}`;
 
       button.addEventListener('click', () => renderOrder(item));
+
       picker.append(button);
     });
   }
@@ -329,13 +340,18 @@ if (logoutBtn) {
 
   $$('.tt-service-button').forEach(button => {
     button.addEventListener('click', () => {
-      selectedService = button.dataset.service;
+      const service = button.dataset.service;
+
+      if (!Object.prototype.hasOwnProperty.call(services, service)) return;
+
+      selectedService = service;
 
       $$('.tt-service-button').forEach(item => {
         item.classList.toggle('active', item === button);
       });
 
       renderPackages();
+
       if (selected) {
         selected.replaceChildren();
         selected.classList.add('hidden');
